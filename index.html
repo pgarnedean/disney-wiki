@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disney Wiki</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- 1. Disney Wiki テーマ設定 --- */
+        :root {
+            --disney-blue: #1e366e; /* シンデレラ城のような深い青 */
+            --disney-gold: #c5a059; /* 魔法の粉のようなゴールド */
+            --bg-color: #fcfcfc;
+            --text-color: #222;
+            --link-color: #0645ad; /* Wikipediaの青 */
+            --wiki-border: #a7d7f9;
+        }
+
+        body {
+            font-family: 'Noto Serif JP', serif; /* Wikipediaらしい明朝体ベース */
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        /* --- ヘッダー --- */
+        header {
+            background: linear-gradient(135deg, var(--disney-blue), #0d1b38);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            border-bottom: 3px solid var(--disney-gold);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-family: 'Cinzel', serif;
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--disney-gold);
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .logo::before {
+            content: '✨';
+            margin-right: 10px;
+            font-size: 20px;
+        }
+
+        .user-panel {
+            font-family: sans-serif;
+            font-size: 14px;
+        }
+
+        .btn {
+            background-color: var(--disney-gold);
+            color: var(--disney-blue);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background-color: white;
+            box-shadow: 0 0 10px var(--disney-gold);
+        }
+
+        /* --- メインレイアウト (聖杯レイアウト) --- */
+        .container {
+            display: flex;
+            max-width: 1400px;
+            margin: 20px auto;
+            background: white;
+            min-height: 80vh;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            position: relative;
+        }
+
+        /* 左サイドバー (目次) */
+        .sidebar-left {
+            width: 250px;
+            padding: 20px;
+            background: #fbfbfb;
+            border-right: 1px solid #eee;
+            font-size: 14px;
+        }
+        
+        .toc-container {
+            position: sticky;
+            top: 80px;
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .toc-title {
+            text-align: center;
+            font-weight: bold;
+            border-bottom: 1px solid #ccc;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+        }
+
+        .toc-list a {
+            display: block;
+            color: var(--link-color);
+            text-decoration: none;
+            margin-bottom: 5px;
+            padding-left: 10px;
+        }
+        
+        .toc-list a:hover {
+            text-decoration: underline;
+        }
+
+        /* メインコンテンツ */
+        .main-content {
+            flex: 1;
+            padding: 30px 40px;
+            position: relative;
+        }
+
+        /* 右サイドバー (Infobox) */
+        .infobox-container {
+            float: right;
+            width: 300px;
+            margin: 0 0 20px 20px;
+            background: #fff;
+            border: 1px solid #aaa;
+            padding: 5px;
+            font-size: 90%;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .infobox-title {
+            background: var(--disney-blue);
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-weight: bold;
+            font-family: 'Cinzel', serif;
+            border: 2px solid var(--disney-gold);
+        }
+
+        .infobox-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+            margin: 10px 0;
+        }
+
+        .infobox-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .infobox-table th, .infobox-table td {
+            border-bottom: 1px solid #ddd;
+            padding: 5px;
+            text-align: left;
+        }
+
+        /* --- 記事スタイル --- */
+        h1.page-title {
+            font-family: 'Cinzel', serif;
+            border-bottom: 2px solid var(--disney-gold);
+            padding-bottom: 10px;
+            font-size: 2.5em;
+            margin-top: 0;
+        }
+
+        h2 {
+            border-bottom: 1px solid #aaa;
+            padding-bottom: 5px;
+            margin-top: 30px;
+            font-family: 'Cinzel', serif;
+            color: var(--disney-blue);
+        }
+
+        .content-text {
+            margin-bottom: 15px;
+        }
+
+        a.wiki-link {
+            color: var(--link-color);
+            text-decoration: none;
+        }
+        a.wiki-link:hover { text-decoration: underline; }
+        
+        /* 埋め込み要素 */
+        .wiki-image, .wiki-video {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+            padding: 3px;
+            background: #fff;
+            margin: 10px 0;
+        }
+
+        .wiki-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        .wiki-table th, .wiki-table td {
+            border: 1px solid #ccc;
+            padding: 8px;
+        }
+        .wiki-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        /* --- 編集モード UI --- */
+        .edit-controls {
+            display: none; /* デフォルト非表示 */
+            background: #fff8e1;
+            padding: 20px;
+            border: 2px dashed var(--disney-gold);
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .edit-active .edit-controls {
+            display: block;
+        }
+
+        .edit-active .view-only {
+            display: none;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        textarea { height: 100px; }
+
+        .editor-section {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        .add-btn {
+            background: #eee;
+            border: 1px dashed #999;
+            width: 100%;
+            padding: 10px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .add-btn:hover { background: #e0e0e0; }
+
+        /* ダイアログ */
+        #setup-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 2000;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; padding: 30px; border-radius: 8px; max-width: 500px;
+            text-align: center; border: 4px solid var(--disney-gold);
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo" onclick="app.router('home')">Disney Wiki</div>
+        <div class="user-panel">
+            <span id="user-name" style="margin-right:15px; display:none;">ゲスト</span>
+            <button id="auth-btn" class="btn">Googleでログイン</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="sidebar-left">
+            <div class="toc-container" id="toc-area">
+                <div class="toc-title">目次</div>
+                <div class="toc-list" id="toc-list">
+                    <span style="color:#999; font-style:italic;">記事の内容から生成されます</span>
+                </div>
+            </div>
+            <div style="margin-top: 30px; text-align: center;">
+                <button class="btn" onclick="app.createNewPage()" style="font-size:12px;">＋ 新しいページを作る</button>
+            </div>
+        </div>
+
+        <main class="main-content" id="main-content">
+            
+            <div id="view-mode" class="view-only">
+                <div id="infobox-placeholder"></div>
+                <h1 class="page-title" id="view-title">Welcome to Disney Wiki</h1>
+                <div id="view-body">
+                    <p>ここにはまだ何もありません。右上の編集ボタンを押して魔法をかけてください！</p>
+                </div>
+                <div style="margin-top: 50px; border-top: 1px solid #eee; padding-top: 10px; text-align: right;">
+                    <button class="btn" id="edit-btn" onclick="app.toggleEdit()">このページを編集 ✎</button>
+                </div>
+            </div>
+
+            <div id="edit-mode" class="edit-controls">
+                <h2>📝 ページを編集</h2>
+                
+                <div class="input-group">
+                    <label>ページタイトル</label>
+                    <input type="text" id="edit-title-input">
+                </div>
+
+                <div style="background:#f0f8ff; padding:10px; margin-bottom:15px; border:1px solid #add8e6;">
+                    <h3>Infobox (右側の情報枠)</h3>
+                    <div class="input-group">
+                        <label>画像のURL</label>
+                        <input type="text" id="edit-info-image" placeholder="https://...">
+                    </div>
+                    <div id="edit-info-rows">
+                        </div>
+                    <button type="button" onclick="editor.addInfoRow()">＋ 情報行を追加</button>
+                </div>
+
+                <hr>
+
+                <div id="edit-sections">
+                    </div>
+
+                <button class="add-btn" onclick="editor.addSection()">＋ セクション（見出し・本文）を追加</button>
+                
+                <div style="margin-top: 30px; text-align: right;">
+                    <button class="btn" style="background:#ccc;" onclick="app.toggleEdit()">キャンセル</button>
+                    <button class="btn" onclick="app.savePage()">✨ 保存して公開</button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        // ============================================================
+        // 設定入力済み
+        // ============================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBXGAvYQnGZGIALlfsE93C4vBMR41Lp6QA",
+            authDomain: "disney-wiki-b76e8.firebaseapp.com",
+            projectId: "disney-wiki-b76e8",
+            storageBucket: "disney-wiki-b76e8.firebasestorage.app",
+            messagingSenderId: "929516211078",
+            appId: "1:929516211078:web:a9c5b3a32a9a9c089e3a07"
+        };
+        // ============================================================
+
+        // アプリ初期化
+        const firebaseApp = initializeApp(firebaseConfig);
+        const auth = getAuth(firebaseApp);
+        const db = getFirestore(firebaseApp);
+        const provider = new GoogleAuthProvider();
+
+        // アプリケーションの状態管理
+        window.app = {
+            currentPageId: 'home',
+            currentUser: null,
+            data: {}, // 現在のページデータ
+
+            // 初期化
+            init: function() {
+                // URLハッシュが変わったらページ移動
+                window.addEventListener('hashchange', () => this.router());
+                
+                // 認証状態の監視
+                onAuthStateChanged(auth, (user) => {
+                    this.currentUser = user;
+                    this.updateAuthUI();
+                });
+
+                // 初回ロード
+                this.router();
+            },
+
+            // ルーティング
+            router: function(pageId) {
+                if(pageId) window.location.hash = pageId;
+                const hash = window.location.hash.replace('#', '') || 'home';
+                this.currentPageId = hash;
+                this.loadPage(hash);
+                window.scrollTo(0,0);
+            },
+
+            // 認証UI更新
+            updateAuthUI: function() {
+                const btn = document.getElementById('auth-btn');
+                const nameSpan = document.getElementById('user-name');
+                if (this.currentUser) {
+                    btn.textContent = 'ログアウト';
+                    btn.onclick = () => signOut(auth);
+                    nameSpan.textContent = this.currentUser.displayName;
+                    nameSpan.style.display = 'inline';
+                    document.getElementById('edit-btn').style.display = 'inline-block';
+                } else {
+                    btn.textContent = 'Googleでログイン';
+                    btn.onclick = () => signInWithPopup(auth, provider);
+                    nameSpan.style.display = 'none';
+                    // 未ログイン時は編集ボタンを隠す（または押したときにログインを促す）
+                    document.getElementById('edit-btn').style.display = 'none';
+                }
+            },
+
+            // Firestoreからページ取得
+            loadPage: async function(id) {
+                // UIリセット
+                document.getElementById('edit-mode').classList.remove('edit-active');
+                document.getElementById('view-mode').classList.remove('edit-active');
+                document.getElementById('view-mode').style.display = 'block';
+                document.getElementById('edit-mode').style.display = 'none';
+
+                try {
+                    const docRef = doc(db, "pages", id);
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists()) {
+                        this.data = docSnap.data();
+                        this.renderView(this.data);
+                    } else {
+                        // 新規ページの場合
+                        this.data = {
+                            title: id === 'home' ? 'Disney Wiki Home' : decodeURIComponent(id),
+                            sections: [],
+                            infobox: { image: '', rows: [] }
+                        };
+                        this.renderView(this.data);
+                        if(id !== 'home') {
+                            // 新規ページのみ確認
+                            if(confirm('このページはまだ存在しません。作成しますか？')) {
+                                this.toggleEdit();
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error loading page:", e);
+                    if(e.code === 'permission-denied') {
+                        alert('データベースへのアクセス権限がありません。FirebaseコンソールでFirestoreのルールを「テストモード」に設定してください。');
+                    } else if (e.code === 'unavailable') {
+                        alert('インターネット接続を確認してください');
+                    }
+                }
+            },
+
+            // 閲覧モードのレンダリング
+            renderView: function(data) {
+                document.getElementById('view-title').textContent = data.title;
+                const viewBody = document.getElementById('view-body');
+                const tocList = document.getElementById('toc-list');
+                const infoboxPlaceholder = document.getElementById('infobox-placeholder');
+
+                viewBody.innerHTML = '';
+                tocList.innerHTML = '';
+                infoboxPlaceholder.innerHTML = '';
+
+                // Infobox生成
+                if (data.infobox && (data.infobox.image || (data.infobox.rows && data.infobox.rows.length > 0))) {
+                    let infoHtml = `<div class="infobox-container">
+                        <div class="infobox-title">${data.title}</div>`;
+                    
+                    if(data.infobox.image) {
+                        infoHtml += `<div class="infobox-image"><img src="${data.infobox.image}" alt="Image"></div>`;
+                    }
+                    
+                    if(data.infobox.rows && data.infobox.rows.length > 0) {
+                        infoHtml += `<table class="infobox-table"><tbody>`;
+                        data.infobox.rows.forEach(row => {
+                            infoHtml += `<tr><th>${row.key}</th><td>${row.value}</td></tr>`;
+                        });
+                        infoHtml += `</tbody></table>`;
+                    }
+                    infoHtml += `</div>`;
+                    infoboxPlaceholder.innerHTML = infoHtml;
+                }
+
+                // セクション（本文）生成
+                if(!data.sections || data.sections.length === 0) {
+                    viewBody.innerHTML = '<p>まだ内容がありません。</p>';
+                } else {
+                    data.sections.forEach((sec, index) => {
+                        // 見出し
+                        if(sec.heading) {
+                            const h2 = document.createElement('h2');
+                            h2.id = `section-${index}`;
+                            h2.textContent = sec.heading;
+                            viewBody.appendChild(h2);
+
+                            // 目次に追加
+                            const tocLink = document.createElement('a');
+                            tocLink.href = `#section-${index}`;
+                            // ページ内リンク動作の上書き
+                            tocLink.onclick = (e) => {
+                                e.preventDefault();
+                                document.getElementById(`section-${index}`).scrollIntoView({behavior: 'smooth'});
+                            };
+                            tocLink.textContent = sec.heading;
+                            tocList.appendChild(tocLink);
+                        }
+
+                        // コンテンツブロックの描画
+                        const contentDiv = document.createElement('div');
+                        contentDiv.className = 'content-text';
+                        
+                        // リンクと太字のパース処理
+                        let html = sec.content || '';
+                        // リンク: [[ページ名]] -> <a href="#ページ名">ページ名</a>
+                        html = html.replace(/\[\[(.*?)\]\]/g, '<a href="#$1" class="wiki-link" onclick="app.router(\'$1\')">$1</a>');
+                        // 太字: **文字** -> <b>文字</b>
+                        html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+                        // 改行
+                        html = html.replace(/\n/g, '<br>');
+
+                        contentDiv.innerHTML = html;
+                        viewBody.appendChild(contentDiv);
+
+                        // メディア挿入 (画像/動画/表)
+                        if(sec.mediaType === 'image' && sec.mediaUrl) {
+                            viewBody.innerHTML += `<img src="${sec.mediaUrl}" class="wiki-image">`;
+                        } else if(sec.mediaType === 'video' && sec.mediaUrl) {
+                            viewBody.innerHTML += `<video src="${sec.mediaUrl}" controls class="wiki-video"></video>`;
+                        } else if(sec.mediaType === 'table' && sec.tableData) {
+                            // 簡易的な表表示
+                            let tableHtml = '<table class="wiki-table"><tbody>';
+                            sec.tableData.forEach(row => {
+                                tableHtml += '<tr>';
+                                row.forEach(cell => {
+                                    tableHtml += `<td>${cell}</td>`;
+                                });
+                                tableHtml += '</tr>';
+                            });
+                            tableHtml += '</tbody></table>';
+                            viewBody.innerHTML += tableHtml;
+                        }
+                    });
+                }
+            },
+
+            // 編集モードへの切り替え
+            toggleEdit: function() {
+                if(!this.currentUser) {
+                    alert('編集するにはログインしてください');
+                    signInWithPopup(auth, provider);
+                    return;
+                }
+                const view = document.getElementById('view-mode');
+                const edit = document.getElementById('edit-mode');
+                
+                if (edit.style.display === 'none') {
+                    // 編集開始：データをフォームに入れる
+                    view.style.display = 'none';
+                    edit.style.display = 'block';
+                    editor.loadEditor(this.data);
+                } else {
+                    // キャンセル
+                    view.style.display = 'block';
+                    edit.style.display = 'none';
+                }
+            },
+
+            // 保存処理
+            savePage: async function() {
+                const newData = editor.getData();
+                try {
+                    await setDoc(doc(db, "pages", this.currentPageId), newData);
+                    alert('保存しました！✨');
+                    this.data = newData;
+                    this.loadPage(this.currentPageId); // リロードして表示
+                } catch (e) {
+                    console.error(e);
+                    alert('保存に失敗しました: ' + e.message);
+                }
+            },
+
+            // 新規ページ作成
+            createNewPage: function() {
+                const name = prompt("新しいページのタイトルを入力してください（例：ミッキーマウス）");
+                if(name) {
+                    this.router(name);
+                }
+            }
+        };
+
+        // エディタ機能 (DOM操作)
+        window.editor = {
+            loadEditor: function(data) {
+                document.getElementById('edit-title-input').value = data.title || '';
+                
+                // Infobox
+                document.getElementById('edit-info-image').value = (data.infobox && data.infobox.image) ? data.infobox.image : '';
+                document.getElementById('edit-info-rows').innerHTML = '';
+                if(data.infobox && data.infobox.rows) {
+                    data.infobox.rows.forEach(r => this.addInfoRow(r.key, r.value));
+                }
+
+                // Sections
+                document.getElementById('edit-sections').innerHTML = '';
+                if(data.sections) {
+                    data.sections.forEach(s => this.addSection(s));
+                } else {
+                    this.addSection(); // 空のセクションを1つ追加
+                }
+            },
+
+            addInfoRow: function(key='', val='') {
+                const div = document.createElement('div');
+                div.className = 'input-group';
+                div.style.display = 'flex';
+                div.innerHTML = `
+                    <input type="text" placeholder="項目名" value="${key}" class="info-key" style="width:30%; margin-right:5px;">
+                    <input type="text" placeholder="内容" value="${val}" class="info-val" style="width:60%;">
+                    <button onclick="this.parentElement.remove()" style="width:10%;">×</button>
+                `;
+                document.getElementById('edit-info-rows').appendChild(div);
+            },
+
+            addSection: function(data = null) {
+                const container = document.getElementById('edit-sections');
+                const div = document.createElement('div');
+                div.className = 'editor-section';
+                
+                const heading = data ? data.heading : '';
+                const content = data ? data.content : '';
+                const mediaType = data ? data.mediaType : 'none';
+                const mediaUrl = data ? data.mediaUrl : '';
+
+                div.innerHTML = `
+                    <label>見出し (Heading)</label>
+                    <input type="text" class="sec-heading" value="${heading}" placeholder="セクションの題名">
+                    
+                    <label style="margin-top:10px;">本文</label>
+                    <small>※ [[ページ名]] でリンク、 **文字** で太字になります</small>
+                    <textarea class="sec-content" placeholder="説明文を入力...">${content}</textarea>
+                    
+                    <label style="margin-top:10px;">挿入メディア</label>
+                    <select class="sec-media-type" onchange="this.nextElementSibling.style.display = (this.value === 'none' || this.value === 'table') ? 'none' : 'block';">
+                        <option value="none" ${mediaType==='none'?'selected':''}>なし</option>
+                        <option value="image" ${mediaType==='image'?'selected':''}>画像 (URL)</option>
+                        <option value="video" ${mediaType==='video'?'selected':''}>動画 (URL)</option>
+                        </select>
+                    <input type="text" class="sec-media-url" value="${mediaUrl}" placeholder="画像や動画のURL" style="display:${(mediaType==='none'||mediaType==='table')?'none':'block'}; margin-top:5px;">
+                    
+                    <button onclick="this.parentElement.remove()" style="margin-top:10px; background:#ffcccc; border:none; padding:5px;">このセクションを削除</button>
+                `;
+                container.appendChild(div);
+            },
+
+            getData: function() {
+                // タイトル
+                const title = document.getElementById('edit-title-input').value;
+                
+                // Infobox
+                const infoImg = document.getElementById('edit-info-image').value;
+                const infoRows = [];
+                document.querySelectorAll('#edit-info-rows .input-group').forEach(row => {
+                    const k = row.querySelector('.info-key').value;
+                    const v = row.querySelector('.info-val').value;
+                    if(k) infoRows.push({key: k, value: v});
+                });
+
+                // Sections
+                const sections = [];
+                document.querySelectorAll('.editor-section').forEach(sec => {
+                    sections.push({
+                        heading: sec.querySelector('.sec-heading').value,
+                        content: sec.querySelector('.sec-content').value,
+                        mediaType: sec.querySelector('.sec-media-type').value,
+                        mediaUrl: sec.querySelector('.sec-media-url').value,
+                        tableData: [] 
+                    });
+                });
+
+                return {
+                    title: title,
+                    infobox: { image: infoImg, rows: infoRows },
+                    sections: sections
+                };
+            }
+        };
+
+        // アプリ起動
+        app.init();
+    </script>
+</body>
+</html>
