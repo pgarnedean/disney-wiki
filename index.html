@@ -7,178 +7,176 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* --- 1. 元のデザイン（Disneyテーマ） --- */
         :root {
             --disney-blue: #1e366e;
             --disney-gold: #c5a059;
-            --wiki-border: #a2a9b1;
             --bg-color: #f4f5f7;
+            --wiki-border: #a2a9b1;
         }
 
-        body {
-            font-family: 'Noto Serif JP', serif;
-            background-color: var(--bg-color);
-            margin: 0; padding: 0; color: #202122;
-        }
+        body { font-family: 'Noto Serif JP', serif; background-color: var(--bg-color); margin: 0; color: #202122; overflow-x: hidden; }
 
         /* ヘッダー */
         header {
             background: linear-gradient(135deg, var(--disney-blue), #0d1b38);
-            color: white; padding: 10px 30px;
+            color: white; padding: 10px 30px; border-bottom: 3px solid var(--disney-gold);
             display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 3px solid var(--disney-gold);
             position: sticky; top: 0; z-index: 1000;
         }
+        .logo { font-family: 'Cinzel', serif; font-size: 26px; font-weight: bold; color: var(--disney-gold); cursor: pointer; text-decoration: none; }
 
-        .logo {
-            font-family: 'Cinzel', serif; font-size: 26px; font-weight: bold;
-            color: var(--disney-gold); cursor: pointer; text-decoration: none;
+        /* 検索システム */
+        .search-container { position: relative; width: 300px; }
+        .search-box input { width: 100%; padding: 8px 35px 8px 15px; border-radius: 20px; border: 1px solid var(--disney-gold); outline: none; box-sizing: border-box; }
+        .search-results {
+            position: absolute; top: 40px; left: 0; width: 100%; background: white;
+            border: 1px solid var(--disney-gold); border-radius: 5px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 1001; max-height: 300px; overflow-y: auto; display: none;
         }
-
-        /* 検索バー */
-        .search-box {
-            position: relative; width: 300px;
-        }
-        .search-box input {
-            width: 100%; padding: 8px 35px 8px 15px; border-radius: 20px;
-            border: 1px solid var(--disney-gold); outline: none;
-        }
-        .search-box i {
-            position: absolute; right: 12px; top: 10px; color: var(--disney-blue);
-        }
+        .search-item { padding: 10px; color: #333; cursor: pointer; border-bottom: 1px solid #eee; }
+        .search-item:hover { background: #f0f0f0; }
 
         /* レイアウト */
-        .container {
-            display: flex; max-width: 1400px; margin: 20px auto;
-            background: white; min-height: 90vh; box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }
+        .wrapper { display: flex; max-width: 1400px; margin: 20px auto; background: white; min-height: 90vh; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        .sidebar { width: 280px; padding: 20px; background: #fbfbfb; border-right: 1px solid #eee; }
+        .main-content { flex: 1; padding: 40px; position: relative; width: 100%; box-sizing: border-box; }
 
-        /* サイドバー（目次） */
-        .sidebar {
-            width: 280px; padding: 20px; background: #fbfbfb; border-right: 1px solid #eee;
-        }
-        .toc-title { font-weight: bold; border-bottom: 1px solid var(--disney-gold); margin-bottom: 10px; }
+        /* 目次スタイル */
+        .toc-title { font-weight: bold; border-bottom: 1px solid var(--disney-gold); margin-bottom: 10px; padding-bottom: 5px; }
         .toc-list { list-style: none; padding: 0; font-size: 14px; }
         .toc-item { margin: 5px 0; position: relative; padding-left: 20px; }
-        .toc-toggle { 
-            position: absolute; left: 0; cursor: pointer; transition: 0.3s;
-            color: var(--disney-gold);
-        }
+        .toc-toggle { position: absolute; left: 0; cursor: pointer; color: var(--disney-gold); transition: 0.3s; }
         .toc-sub { padding-left: 15px; display: block; }
         .collapsed .toc-sub { display: none; }
         .collapsed .toc-toggle { transform: rotate(-90deg); }
-        .toc-link { color: #0645ad; text-decoration: none; }
+        .toc-link { color: #0645ad; text-decoration: none; cursor: pointer; }
+        .toc-link:hover { text-decoration: underline; }
 
-        /* メインコンテンツ */
-        .main-content { flex: 1; padding: 40px; position: relative; }
+        /* ページヘッダー（編集ボタンを右端に） */
+        .page-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid #aaa; margin-bottom: 20px; padding-bottom: 10px; }
+        h1.page-title { font-family: 'Cinzel', serif; font-size: 2.5em; margin: 0; border: none; }
+        .btn-edit-top { background: none; border: 1px solid #ccc; padding: 5px 15px; cursor: pointer; font-size: 14px; border-radius: 4px; color: #666; }
+        .btn-edit-top:hover { background: #eee; }
 
-        /* --- 2. 編集ツールバー（Wikipedia風） --- */
+        /* インフォボックス & 導入文 */
+        .article-body { display: flex; flex-direction: row-reverse; gap: 20px; }
+        .intro-text { flex: 1; min-width: 0; font-size: 1.1em; line-height: 1.8; }
+        .infobox {
+            width: 320px; border: 1px solid #aaa; background: #fff; padding: 5px; font-size: 90%; flex-shrink: 0;
+        }
+        .infobox-head { background: var(--disney-blue); color: white; text-align: center; padding: 10px; font-weight: bold; font-family: 'Cinzel', serif; }
+        .infobox-caption { padding: 10px; text-align: center; font-style: italic; border-bottom: 1px solid #eee; }
+        .infobox table { width: 100%; border-collapse: collapse; }
+        .infobox th { background: #f2f2f2; text-align: left; padding: 8px; width: 35%; border-bottom: 1px solid #eee; }
+        .infobox td { padding: 8px; border-bottom: 1px solid #eee; word-break: break-all; }
+
+        /* セクション */
+        h2 { border-bottom: 1px solid #aaa; color: var(--disney-blue); margin-top: 40px; padding-bottom: 5px; }
+        h3 { color: var(--disney-blue); margin-top: 25px; }
+
+        /* 編集モード */
         .editor-toolbar {
-            background: #f8f9fa; border: 1px solid var(--wiki-border);
-            padding: 5px; display: flex; gap: 3px; flex-wrap: wrap;
-            position: sticky; top: 60px; z-index: 999; margin-bottom: 20px;
+            background: #f8f9fa; border: 1px solid var(--wiki-border); padding: 8px;
+            display: flex; gap: 5px; flex-wrap: wrap; position: sticky; top: 60px; z-index: 1000; margin-bottom: 20px;
         }
-        .t-btn {
-            background: white; border: 1px solid #ccc; padding: 5px 8px;
-            cursor: pointer; font-size: 12px; min-width: 30px;
-        }
+        .t-btn { background: white; border: 1px solid #ccc; padding: 5px 10px; cursor: pointer; font-size: 13px; border-radius: 3px; }
         .t-btn:hover { background: #e0e0e0; }
         .t-sep { width: 1px; background: #ccc; margin: 0 5px; }
 
-        /* 記事要素 */
-        h1.page-title { font-family: 'Cinzel', serif; border-bottom: 1px solid #aaa; font-size: 2.5em; margin-top: 0; }
-        h2 { border-bottom: 1px solid #aaa; color: var(--disney-blue); margin-top: 30px; }
-        h3 { color: var(--disney-blue); margin-top: 20px; }
+        .edit-area { width: 100%; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; font-family: 'Noto Serif JP', serif; line-height: 1.6; }
+        .section-edit-card { border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; background: #fffdf5; border-radius: 8px; position: relative; }
         
-        /* インフォボックス */
-        .infobox {
-            float: right; width: 300px; border: 1px solid #aaa;
-            background: #fff; margin: 0 0 20px 20px; padding: 5px; font-size: 90%;
-        }
-        .infobox-head { background: var(--disney-blue); color: white; text-align: center; padding: 8px; font-weight: bold; }
-        .infobox table { width: 100%; border-collapse: collapse; }
-        .infobox th { background: #f2f2f2; text-align: left; padding: 5px; width: 35%; border-bottom: 1px solid #eee; }
-        .infobox td { padding: 5px; border-bottom: 1px solid #eee; }
+        /* 表形式の編集 */
+        .editable-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .editable-table th, .editable-table td { border: 1px solid #ccc; padding: 0; }
+        .editable-table input, .editable-table textarea { width: 100%; border: none; padding: 8px; box-sizing: border-box; outline: none; }
 
-        /* TOPページ用カード */
+        /* TOPページ用グリッド */
         .home-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 30px; }
-        .page-card { border: 1px solid #ddd; border-radius: 10px; overflow: hidden; transition: 0.3s; cursor: pointer; }
+        .page-card { border: 1px solid #ddd; border-radius: 10px; overflow: hidden; transition: 0.3s; cursor: pointer; background: #fff; }
         .page-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
         .card-img { width: 100%; height: 180px; object-fit: cover; background: #eee; }
         .card-body { padding: 15px; text-align: center; font-family: 'Cinzel', serif; font-weight: bold; color: var(--disney-blue); }
 
-        /* 編集エリア */
-        .edit-section { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; background: #fffdf5; }
-        textarea { width: 100%; min-height: 120px; border: 1px solid #ccc; font-family: monospace; padding: 10px; }
-        
-        .btn-royal {
-            background: var(--disney-blue); color: white; border: none;
-            padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;
-        }
-
-        .hidden { display: none; }
+        .btn-royal { background: var(--disney-blue); color: white; border: none; padding: 10px 25px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="logo" onclick="app.router('home')">✨ Disney Wiki</div>
-        <div class="search-box">
-            <input type="text" id="search-input" placeholder="Wiki内を検索..." onkeypress="if(event.key==='Enter') app.search()">
-            <i class="fas fa-search"></i>
+        <div class="logo" onclick="app.goHome()">✨ Disney Wiki</div>
+        <div class="search-container">
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="Wiki内を検索..." oninput="app.searchLive(this.value)">
+                <i class="fas fa-search"></i>
+            </div>
+            <div id="search-results" class="search-results"></div>
         </div>
         <button id="auth-btn" class="btn-royal" style="background: var(--disney-gold); color: #000;">ログイン</button>
     </header>
 
-    <div class="container">
+    <div class="wrapper">
         <aside class="sidebar" id="sidebar">
             <div class="toc-title">内容 / 目次</div>
             <ul class="toc-list" id="toc-list"></ul>
-            <div style="margin-top:40px;">
-                <button onclick="app.createNewPage()" style="cursor:pointer; border:1px dashed var(--disney-gold); padding:5px; background:none; width:100%;">+ 新規ページ作成</button>
-            </div>
+            <button onclick="app.createNewPage()" style="margin-top:30px; cursor:pointer; border:1px dashed var(--disney-gold); padding:10px; background:none; width:100%;">+ 新規ページ作成</button>
         </aside>
 
         <main class="main-content">
             <div id="view-mode">
-                <div id="page-content"></div>
-                <div style="margin-top: 50px; text-align: right;">
-                    <button class="btn-royal" id="edit-start-btn" onclick="app.toggleEdit()">このページを編集する ✎</button>
+                <div class="page-header">
+                    <h1 class="page-title" id="display-title"></h1>
+                    <button class="btn-edit-top" onclick="app.toggleEdit()">このページを編集する ✎</button>
                 </div>
+                <div id="page-content"></div>
             </div>
 
             <div id="edit-mode" class="hidden">
-                <h1 id="edit-title-name">編集：</h1>
-                
                 <div class="editor-toolbar">
-                    <button class="t-btn" onclick="editor.insert('**','**')" title="太字"><b>B</b></button>
-                    <button class="t-btn" onclick="editor.insert('*','*')" title="斜体"><i>I</i></button>
-                    <button class="t-btn" onclick="editor.insert('<u>','</u>')" title="下線"><u>U</u></button>
-                    <button class="t-btn" onclick="editor.insert('~~','~~')" title="取り消し線"><s>S</s></button>
-                    <button class="t-btn" onclick="editor.insert('<sup>','</sup>')" title="上付き">x²</button>
-                    <button class="t-btn" onclick="editor.insert('<sub>','</sub>')" title="下付き">x₂</button>
+                    <button class="t-btn" onclick="editor.apply('**','**')" title="太字"><b>B</b></button>
+                    <button class="t-btn" onclick="editor.apply('*','*')" title="斜体"><i>I</i></button>
+                    <button class="t-btn" onclick="editor.apply('<u>','</u>')" title="下線"><u>U</u></button>
+                    <button class="t-btn" onclick="editor.apply('~~','~~')" title="取り消し線"><s>S</s></button>
                     <div class="t-sep"></div>
-                    <button class="t-btn" onclick="editor.insert('<span style=\'font-size:1.5em\'>','</span>')" title="大きく">大</button>
-                    <button class="t-btn" onclick="editor.insert('<span style=\'font-size:0.8em\'>','</span>')" title="小さく">小</button>
+                    <button class="t-btn" onclick="editor.apply('[[',']]')" title="内部リンク"><i class="fas fa-link"></i> Wiki内</button>
+                    <button class="t-btn" onclick="editor.apply('https://en.wiktionary.org/wiki/%E5%90%8D%E5%89%8D')" title="外部リンク"><i class="fas fa-external-link-alt"></i> 外部</button>
                     <div class="t-sep"></div>
-                    <button class="t-btn" onclick="editor.insert('[[',']]')" title="内部リンク"><i class="fas fa-link"></i> Wiki内</button>
-                    <button class="t-btn" onclick="editor.insert('https://en.wiktionary.org/wiki/%E5%90%8D%E5%89%8D')" title="外部リンク"><i class="fas fa-external-link-alt"></i> 外部</button>
-                    <div class="t-sep"></div>
-                    <button class="t-btn" onclick="editor.insert('[[Image:',']]')" title="画像挿入"><i class="fas fa-image"></i> 画像/GIF</button>
-                    <button class="t-btn" onclick="editor.insert('[[Video:',']]')" title="動画挿入"><i class="fas fa-video"></i> 動画</button>
-                    <button class="t-btn" onclick="editor.insertTable()" title="表挿入"><i class="fas fa-table"></i> 表</button>
+                    <button class="t-btn" onclick="editor.apply('[[Image:',']]')" title="画像/GIF"><i class="fas fa-image"></i> 画像</button>
+                    <button class="t-btn" onclick="editor.apply('[[Video:',']]')" title="動画"><i class="fas fa-video"></i> 動画</button>
+                    <button class="t-btn" onclick="editor.insertTableTemplate()" title="表挿入"><i class="fas fa-table"></i> 表</button>
                     <div class="t-sep"></div>
                     <button class="t-btn" onclick="app.savePage()" style="background: var(--disney-gold); font-weight: bold;">✨ 魔法を保存</button>
-                    <button class="t-btn" onclick="app.toggleEdit()">戻る</button>
+                    <button class="t-btn" onclick="app.toggleEdit()">キャンセル</button>
                 </div>
 
-                <div id="editor-sections"></div>
-                <button onclick="editor.addSection()" class="t-btn" style="width:100%; padding:10px;">+ セクションを追加</button>
+                <div id="edit-fields-wiki">
+                    <div class="section-edit-card">
+                        <h4>導入文 (概要)</h4>
+                        <textarea id="edit-intro" class="edit-area" style="min-height: 100px;"></textarea>
+                    </div>
 
-                <div id="home-config" class="hidden" style="margin-top:30px; padding:20px; border:2px solid var(--disney-gold);">
-                    <h3>🏠 トップページ設定</h3>
-                    <p>表示したいページのIDをカンマで入力してください</p>
-                    <input type="text" id="home-featured-ids" style="width:100%; padding:10px;" placeholder="Mickey, TDL, TDS">
+                    <div class="section-edit-card">
+                        <h4>インフォボックス</h4>
+                        画像URL: <input type="text" id="edit-ib-img" class="edit-area" style="margin-bottom:10px;">
+                        画像下の説明: <input type="text" id="edit-ib-caption" class="edit-area" style="margin-bottom:10px;">
+                        <table class="editable-table" id="edit-ib-table">
+                            <thead><tr><th>項目名</th><th>内容 (改行・装飾可)</th><th>操作</th></tr></thead>
+                            <tbody id="ib-rows-body"></tbody>
+                        </table>
+                        <button onclick="editor.addIbRow()" class="t-btn" style="margin-top:10px;">+ 項目を追加</button>
+                    </div>
+
+                    <div id="editor-sections-list"></div>
+                    <button onclick="editor.addSection()" class="btn-royal" style="width:100%; margin-top:10px; background:#666;">+ 新しい見出しを追加</button>
+                </div>
+
+                <div id="edit-fields-home" class="hidden">
+                    <div class="section-edit-card">
+                        <h3>🏠 トップページ設定</h3>
+                        <p>表示したいページIDをカンマ区切りで入力：</p>
+                        <input type="text" id="home-featured-input" class="edit-area" placeholder="Mickey, TDL, TDS">
+                    </div>
                 </div>
             </div>
         </main>
@@ -187,9 +185,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, query, getDocs } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-        // 設定：ユーザー提供のものを使用
         const firebaseConfig = {
             apiKey: "AIzaSyBXGAvYQnGZGIALlfsE93C4vBMR41Lp6QA",
             authDomain: "disney-wiki-b76e8.firebaseapp.com",
@@ -208,6 +205,7 @@
             currentPageId: 'home',
             currentUser: null,
             data: {},
+            history: [],
 
             init: function() {
                 onAuthStateChanged(auth, (user) => {
@@ -216,90 +214,81 @@
                     document.getElementById('auth-btn').onclick = () => user ? signOut(auth) : signInWithPopup(auth, provider);
                 });
                 window.addEventListener('hashchange', () => this.router());
+                window.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey && e.key === 'z' && !document.getElementById('edit-mode').classList.contains('hidden')) {
+                        editor.undo();
+                    }
+                });
                 this.router();
             },
 
             router: function() {
-                const hash = decodeURIComponent(window.location.hash.replace('#', '')) || 'home';
-                this.currentPageId = hash;
-                this.loadPage(hash);
+                const h = decodeURIComponent(location.hash.replace('#', '')) || 'home';
+                this.currentPageId = h;
+                this.loadPage(h);
+                window.scrollTo(0,0);
             },
+
+            goHome: function() { location.hash = 'home'; },
 
             loadPage: async function(id) {
                 const snap = await getDoc(doc(db, "pages", id));
                 if (snap.exists()) {
                     this.data = snap.data();
                 } else {
-                    this.data = { title: id, sections: [], infobox: { image:'', rows:[] }, featured: [] };
+                    this.data = { title: id, intro: '', sections: [], infobox: { image:'', caption:'', rows:[] }, featured: [] };
                 }
                 this.render();
             },
 
             render: function() {
                 const isHome = this.currentPageId === 'home';
-                document.getElementById('sidebar').style.display = isHome ? 'none' : 'block';
+                document.getElementById('sidebar').classList.toggle('hidden', isHome);
+                document.getElementById('display-title').textContent = this.data.title;
                 const container = document.getElementById('page-content');
-                container.innerHTML = `<h1 class="page-title">${this.data.title}</h1>`;
+                container.innerHTML = '';
 
                 if (isHome) {
                     this.renderHome(container);
                 } else {
                     this.renderWiki(container);
+                    this.renderTOC();
                 }
             },
 
             renderWiki: function(container) {
+                const body = document.createElement('div');
+                body.className = 'article-body';
+
                 // Infobox
-                if(this.data.infobox.image || this.data.infobox.rows.length) {
-                    let ib = `<div class="infobox"><div class="infobox-head">${this.data.title}</div>`;
-                    if(this.data.infobox.image) ib += `<img src="${this.data.infobox.image}" style="width:100%">`;
-                    ib += `<table>`;
-                    this.data.infobox.rows.forEach(r => ib += `<tr><th>${r.key}</th><td>${r.value}</td></tr>`);
-                    ib += `</table></div>`;
-                    container.innerHTML += ib;
+                const ibData = this.data.infobox;
+                if(ibData.image || ibData.rows.length) {
+                    let html = `<div class="infobox"><div class="infobox-head">${this.data.title}</div>`;
+                    if(ibData.image) html += `<img src="${ibData.image}" style="width:100%">`;
+                    if(ibData.caption) html += `<div class="infobox-caption">${ibData.caption}</div>`;
+                    html += `<table>`;
+                    ibData.rows.forEach(r => html += `<tr><th>${r.key}</th><td>${this.parse(r.value)}</td></tr>`);
+                    html += `</table></div>`;
+                    body.innerHTML += html;
                 }
 
-                // Sections & TOC
-                const tocList = document.getElementById('toc-list');
-                tocList.innerHTML = '';
+                // Intro & Sections
+                const textPart = document.createElement('div');
+                textPart.className = 'intro-text';
+                textPart.innerHTML = this.parse(this.data.intro || '');
                 
-                this.data.sections.forEach((sec, i) => {
-                    const tag = sec.level == 3 ? 'h3' : 'h2';
-                    container.innerHTML += `<${tag} id="sec-${i}">${sec.heading}</${tag}>`;
-                    container.innerHTML += `<div>${this.parse(sec.content)}</div>`;
-
-                    // TOC logic
-                    if(sec.level == 2) {
-                        const li = document.createElement('li');
-                        li.className = 'toc-item';
-                        li.innerHTML = `<a href="#sec-${i}" class="toc-link">${sec.heading}</a>`;
-                        
-                        // Check for children
-                        const subUl = document.createElement('ul');
-                        subUl.className = 'toc-sub';
-                        let hasChild = false;
-                        for(let j=i+1; j<this.data.sections.length; j++) {
-                            if(this.data.sections[j].level == 3) {
-                                hasChild = true;
-                                subUl.innerHTML += `<li class="toc-item"><a href="#sec-${j}" class="toc-link">${this.data.sections[j].heading}</a></li>`;
-                            } else break;
-                        }
-                        if(hasChild) {
-                            li.classList.add('collapsed');
-                            const toggle = document.createElement('span');
-                            toggle.className = 'toc-toggle';
-                            toggle.innerHTML = '<i class="fas fa-caret-down"></i>';
-                            toggle.onclick = (e) => { e.preventDefault(); li.classList.toggle('collapsed'); };
-                            li.prepend(toggle);
-                            li.appendChild(subUl);
-                        }
-                        tocList.appendChild(li);
-                    }
+                this.data.sections.forEach((s, i) => {
+                    const tag = s.level == 3 ? 'h3' : 'h2';
+                    textPart.innerHTML += `<${tag} id="sec-${i}">${s.heading}</${tag}>`;
+                    textPart.innerHTML += `<div>${this.parse(s.content)}</div>`;
                 });
+                
+                body.appendChild(textPart);
+                container.appendChild(body);
             },
 
             renderHome: async function(container) {
-                container.innerHTML += `<p>Disney Wiki へようこそ！魔法のような百科事典をみんなで作りましょう。</p>`;
+                container.innerHTML = `<p style="font-size:1.2em; text-align:center;">夢と魔法の百科事典へようこそ</p>`;
                 const grid = document.createElement('div');
                 grid.className = 'home-grid';
                 for(const id of (this.data.featured || [])) {
@@ -316,41 +305,83 @@
                 container.appendChild(grid);
             },
 
+            renderTOC: function() {
+                const list = document.getElementById('toc-list');
+                list.innerHTML = '';
+                this.data.sections.forEach((s, i) => {
+                    if(s.level == 2) {
+                        const li = document.createElement('li');
+                        li.className = 'toc-item';
+                        li.innerHTML = `<a class="toc-link" onclick="app.scrollToSec('sec-${i}')">${s.heading}</a>`;
+                        const sub = document.createElement('ul');
+                        sub.className = 'toc-sub';
+                        let hasSub = false;
+                        for(let j=i+1; j<this.data.sections.length; j++){
+                            if(this.data.sections[j].level == 3){
+                                hasSub = true;
+                                sub.innerHTML += `<li class="toc-item"><a class="toc-link" onclick="app.scrollToSec('sec-${j}')">${this.data.sections[j].heading}</a></li>`;
+                            } else break;
+                        }
+                        if(hasSub) {
+                            const t = document.createElement('span'); t.className = 'toc-toggle'; t.innerHTML = '<i class="fas fa-caret-down"></i>';
+                            t.onclick = () => li.classList.toggle('collapsed');
+                            li.prepend(t); li.appendChild(sub);
+                        }
+                        list.appendChild(li);
+                    }
+                });
+            },
+
+            scrollToSec: function(id) {
+                const el = document.getElementById(id);
+                if(el) window.scrollTo({ top: el.offsetTop - 80, behavior: 'smooth' });
+            },
+
             parse: function(t) {
                 if(!t) return '';
                 return t
-                    .replace(/\*\* (.*?) \*\*/g, '<b>$1</b>')
-                    .replace(/\* (.*?) \*/g, '<i>$1</i>')
-                    .replace(/\[\[Image:(.*?)\]\]/g, '<img src="$1" style="max-width:100%; border:1px solid #ccc; padding:2px;">')
+                    .replace(/\*\* (.*?) \*\*/g, '<b>$1</b>').replace(/\* (.*?) \*/g, '<i>$1</i>')
+                    .replace(/\[\[Image:(.*?)\]\]/g, '<img src="$1" style="max-width:100%; margin:10px 0;">')
                     .replace(/\[\[Video:(.*?)\]\]/g, '<video src="$1" controls style="max-width:100%"></video>')
                     .replace(/\[\[(.*?)\]\]/g, '<a href="#$1" style="color:#0645ad">$1</a>')
                     .replace(/\[(https?:\/\/\S+)\s(.*?)\]/g, '<a href="$1" target="_blank" style="color:#36b">$2 <i class="fas fa-external-link-alt" style="font-size:10px"></i></a>')
-                    .replace(/\{\|([\s\S]*?)\|\}/g, (m, content) => {
-                        let html = '<table border="1" style="width:100%; border-collapse:collapse;">';
-                        content.split('|-').forEach(row => {
-                            html += '<tr>' + row.split('|').filter(c=>c.trim()).map(c => `<td>${c}</td>`).join('') + '</tr>';
-                        });
-                        return html + '</table>';
-                    })
                     .replace(/\n/g, '<br>');
             },
 
+            searchLive: async function(val) {
+                const resDiv = document.getElementById('search-results');
+                if(!val) { resDiv.style.display = 'none'; return; }
+                const q = query(collection(db, "pages"));
+                const snap = await getDocs(q);
+                resDiv.innerHTML = '';
+                let count = 0;
+                snap.forEach(doc => {
+                    if(doc.id.toLowerCase().includes(val.toLowerCase()) && count < 10) {
+                        const item = document.createElement('div');
+                        item.className = 'search-item';
+                        item.textContent = doc.id;
+                        item.onclick = () => { location.hash = doc.id; resDiv.style.display = 'none'; document.getElementById('search-input').value = ''; };
+                        resDiv.appendChild(item);
+                        count++;
+                    }
+                });
+                resDiv.style.display = count > 0 ? 'block' : 'none';
+            },
+
             toggleEdit: function() {
-                if(!this.currentUser) return alert('編集にはログインが必要です');
+                if(!this.currentUser) return alert('ログインが必要です');
                 document.getElementById('view-mode').classList.toggle('hidden');
                 document.getElementById('edit-mode').classList.toggle('hidden');
-                if(!document.getElementById('edit-mode').classList.contains('hidden')) editor.load();
+                if(!document.getElementById('edit-mode').classList.contains('hidden')) {
+                    this.history = [JSON.stringify(this.data)];
+                    editor.load();
+                }
             },
 
             savePage: async function() {
-                const updated = editor.save();
+                const updated = editor.collect();
                 await setDoc(doc(db, "pages", this.currentPageId), updated);
                 location.reload();
-            },
-
-            search: function() {
-                const v = document.getElementById('search-input').value;
-                if(v) location.hash = v;
             },
 
             createNewPage: function() {
@@ -360,71 +391,118 @@
         };
 
         window.editor = {
+            activeInput: null,
+            
             load: function() {
-                document.getElementById('edit-title-name').textContent = "編集：" + app.data.title;
-                const list = document.getElementById('editor-sections');
-                list.innerHTML = `
-                    <div class="edit-section">
-                        <h4>インフォボックス (画像URL / 項目)</h4>
-                        画像: <input type="text" id="e-ib-img" value="${app.data.infobox.image}" style="width:80%"><br>
-                        項目(Key:Value, カンマ区切り): <textarea id="e-ib-rows">${app.data.infobox.rows.map(r=>`${r.key}:${r.value}`).join(',')}</textarea>
-                    </div>`;
-                app.data.sections.forEach(s => this.addSection(s));
-                
-                if(app.currentPageId === 'home') {
-                    document.getElementById('home-config').classList.remove('hidden');
-                    document.getElementById('home-featured-ids').value = app.data.featured.join(',');
+                const isHome = app.currentPageId === 'home';
+                document.getElementById('edit-fields-wiki').classList.toggle('hidden', isHome);
+                document.getElementById('edit-fields-home').classList.toggle('hidden', !isHome);
+
+                if(!isHome) {
+                    document.getElementById('edit-intro').value = app.data.intro || '';
+                    document.getElementById('edit-ib-img').value = app.data.infobox.image || '';
+                    document.getElementById('edit-ib-caption').value = app.data.infobox.caption || '';
+                    const tbody = document.getElementById('ib-rows-body');
+                    tbody.innerHTML = '';
+                    app.data.infobox.rows.forEach(r => this.addIbRow(r));
+                    
+                    const secList = document.getElementById('editor-sections-list');
+                    secList.innerHTML = '';
+                    app.data.sections.forEach(s => this.addSection(s));
                 } else {
-                    document.getElementById('home-config').classList.add('hidden');
+                    document.getElementById('home-featured-input').value = app.data.featured?.join(', ') || '';
                 }
+
+                // 最後に触った入力を記録
+                document.querySelectorAll('textarea, input').forEach(el => {
+                    el.onfocus = () => this.activeInput = el;
+                });
+            },
+
+            addIbRow: function(data = {key:'', value:''}) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><input type="text" class="ib-key" value="${data.key}"></td>
+                    <td><textarea class="ib-val">${data.value}</textarea></td>
+                    <td style="text-align:center"><button onclick="this.parentElement.parentElement.remove()">❌</button></td>
+                `;
+                document.getElementById('ib-rows-body').appendChild(tr);
             },
 
             addSection: function(s = {heading:'', content:'', level:2}) {
                 const d = document.createElement('div');
-                d.className = 'edit-section';
+                d.className = 'section-edit-card';
                 d.innerHTML = `
-                    見出しレベル: <select class="e-level"><option value="2" ${s.level==2?'selected':''}>H2</option><option value="3" ${s.level==3?'selected':''}>H3 (小見出し)</option></select>
-                    見出し名: <input type="text" class="e-head" value="${s.heading}" style="width:60%">
-                    <button onclick="this.parentElement.remove()">削除</button>
-                    <textarea class="e-content">${s.content}</textarea>
+                    レベル: <select class="s-level"><option value="2" ${s.level==2?'selected':''}>H2</option><option value="3" ${s.level==3?'selected':''}>H3</option></select>
+                    見出し名: <input type="text" class="s-head" value="${s.heading}" style="width:50%">
+                    <button style="float:right" onclick="editor.saveHistory(); this.parentElement.remove()">削除</button>
+                    <textarea class="s-content edit-area" style="margin-top:10px;">${s.content}</textarea>
                 `;
-                document.getElementById('editor-sections').appendChild(d);
+                document.getElementById('editor-sections-list').appendChild(d);
             },
 
-            insert: function(b, a) {
-                const el = document.activeElement;
-                if(el.tagName === 'TEXTAREA') {
-                    const s = el.selectionStart;
-                    const e = el.selectionEnd;
-                    el.value = el.value.substring(0, s) + b + el.value.substring(s, e) + a + el.value.substring(e);
+            apply: function(before, after) {
+                const el = this.activeInput;
+                if(!el) return;
+                const start = el.selectionStart;
+                const end = el.selectionEnd;
+                const text = el.value;
+                const selected = text.substring(start, end);
+                el.value = text.substring(0, start) + before + selected + after + text.substring(end);
+                el.focus();
+                el.setSelectionRange(start + before.length, end + before.length);
+                this.saveHistory();
+            },
+
+            insertTableTemplate: function() {
+                this.apply("\n{| class=\"wiki-table\"\n|-\n| 見出し1 || 見出し2\n|-\n| データ1 || データ2\n|}", "");
+            },
+
+            saveHistory: function() {
+                const state = JSON.stringify(this.collect());
+                if(app.history[app.history.length-1] !== state) {
+                    app.history.push(state);
+                    if(app.history.length > 20) app.history.shift();
                 }
             },
 
-            insertTable: function() {
-                this.insert("\n{| \n|- \n| 見出し1 | 見出し2 \n|- \n| データ1 | データ2 \n|}", "");
+            undo: function() {
+                if(app.history.length > 1) {
+                    app.history.pop();
+                    app.data = JSON.parse(app.history[app.history.length-1]);
+                    this.load();
+                }
             },
 
-            save: function() {
-                const secs = [];
-                document.querySelectorAll('#editor-sections > .edit-section').forEach(el => {
-                    const h = el.querySelector('.e-head')?.value;
-                    if(h !== undefined) {
-                        secs.push({
-                            level: el.querySelector('.e-level').value,
-                            heading: h,
-                            content: el.querySelector('.e-content').value
-                        });
-                    }
+            collect: function() {
+                const isHome = app.currentPageId === 'home';
+                if(isHome) {
+                    return {
+                        title: 'home',
+                        featured: document.getElementById('home-featured-input').value.split(',').map(s=>s.trim()).filter(s=>s)
+                    };
+                }
+                const ibRows = [];
+                document.querySelectorAll('#ib-rows-body tr').forEach(tr => {
+                    ibRows.push({ key: tr.querySelector('.ib-key').value, value: tr.querySelector('.ib-val').value });
                 });
-                const ibRows = document.getElementById('e-ib-rows').value.split(',').filter(r=>r.includes(':')).map(r => {
-                    const parts = r.split(':');
-                    return { key: parts[0].trim(), value: parts[1].trim() };
+                const secs = [];
+                document.querySelectorAll('#editor-sections-list .section-edit-card').forEach(el => {
+                    secs.push({
+                        level: el.querySelector('.s-level').value,
+                        heading: el.querySelector('.s-head').value,
+                        content: el.querySelector('.s-content').value
+                    });
                 });
                 return {
                     title: app.data.title,
-                    sections: secs,
-                    infobox: { image: document.getElementById('e-ib-img').value, rows: ibRows },
-                    featured: document.getElementById('home-featured-ids')?.value.split(',') || []
+                    intro: document.getElementById('edit-intro').value,
+                    infobox: {
+                        image: document.getElementById('edit-ib-img').value,
+                        caption: document.getElementById('edit-ib-caption').value,
+                        rows: ibRows
+                    },
+                    sections: secs
                 };
             }
         };
