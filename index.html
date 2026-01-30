@@ -23,25 +23,42 @@
             overflow-x: hidden; 
         }
 
-        /* --- 強化されたキラキラ演出 --- */
-        #sparkle-canvas {
+        /* --- 演出関連 --- */
+        #effects-canvas {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 9999;
+            pointer-events: none; z-index: 9990; overflow: hidden;
         }
-        .sparkle {
+
+        /* キラキラ（星形） */
+        .sparkle-star {
             position: absolute;
-            background: white;
-            border-radius: 50%;
+            color: white;
+            font-size: 10px;
             opacity: 0;
-            animation: floatUp linear forwards;
-            box-shadow: 0 0 5px currentColor;
+            animation: twinkle 2s linear forwards;
+            text-shadow: 0 0 5px currentColor;
         }
-        @keyframes floatUp {
-            0% { transform: translateY(0) scale(0); opacity: 0; }
-            20% { opacity: 0.8; transform: translateY(-20px) scale(1); }
-            80% { opacity: 0.8; transform: translateY(-80px) scale(1); }
-            100% { transform: translateY(-100px) scale(0); opacity: 0; }
+        @keyframes twinkle {
+            0% { transform: scale(0) rotate(0deg); opacity: 0; }
+            50% { transform: scale(1.5) rotate(180deg); opacity: 1; }
+            100% { transform: scale(0) rotate(360deg); opacity: 0; }
         }
+
+        /* ミッキーアニメーション */
+        .hidden-mickey {
+            position: absolute;
+            width: 150px; height: 150px;
+            transition: transform 3s ease-in-out;
+            opacity: 0.9;
+            filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.2));
+        }
+        /* 左から出る用 */
+        .mickey-left { left: -160px; top: 50%; }
+        .mickey-left.show { transform: translateX(140px) rotate(10deg); }
+        
+        /* 右から出る用 */
+        .mickey-right { right: -160px; top: 50%; }
+        .mickey-right.show { transform: translateX(-140px) rotate(-10deg); }
 
         /* ヘッダー */
         header {
@@ -88,7 +105,7 @@
         h2 { border-bottom: 1px solid #aaa; color: var(--disney-blue); margin-top: 40px; padding-bottom: 5px; font-size: 1.8em; }
         h3 { color: var(--disney-blue); margin-top: 25px; font-size: 1.4em; border-bottom: 1px dashed #ccc; }
 
-        /* メディアボックス（画像・動画・GIF） */
+        /* メディアボックス */
         .media-box { border: 1px solid #eee; background: #fafafa; padding: 5px; text-align: center; }
         .media-title { font-weight: bold; font-size: 0.9em; margin-bottom: 5px; color: var(--disney-blue); }
         .media-desc { font-size: 0.85em; color: #555; margin-top: 5px; line-height: 1.4; }
@@ -152,7 +169,7 @@
     </style>
 </head>
 <body>
-    <div id="sparkle-canvas"></div>
+    <div id="effects-canvas"></div>
 
     <div id="video-modal" class="video-modal" onclick="app.closeVideo()">
         <div class="video-modal-content" onclick="event.stopPropagation()">
@@ -266,32 +283,68 @@
 
         let activeInput = null;
 
-        // キラキラ演出スクリプト
-        function initSparkles() {
-            const container = document.getElementById('sparkle-canvas');
-            const colors = ['#ffffff', '#fffacd', '#e0ffff']; // 白, クリーム(黄系), 薄い青
+        // --- 演出スクリプト ---
+        function initEffects() {
+            const container = document.getElementById('effects-canvas');
             
+            // 1. キラキラ（星型）
             setInterval(() => {
-                const s = document.createElement('div');
-                s.className = 'sparkle';
+                const star = document.createElement('div');
+                star.className = 'sparkle-star';
+                star.innerHTML = '✦'; // 星文字
+                
                 // 左右の端（0-10% または 90-100%）に配置
                 const isLeft = Math.random() > 0.5;
-                const leftPos = isLeft ? Math.random() * 10 : 90 + Math.random() * 10;
+                const leftPos = isLeft ? Math.random() * 8 : 92 + Math.random() * 8;
+                star.style.left = leftPos + '%';
+                star.style.top = (Math.random() * 100) + '%';
                 
-                s.style.left = leftPos + '%';
-                s.style.top = (Math.random() * 100) + '%';
+                // 色：白、黄色(Gold/Khaki)、青(Cyan/SkyBlue)
+                const colors = ['#ffffff', '#fffacd', '#ffd700', '#e0ffff', '#87cefa'];
+                star.style.color = colors[Math.floor(Math.random() * colors.length)];
                 
-                const size = 3 + Math.random() * 5;
-                s.style.width = size + 'px';
-                s.style.height = size + 'px';
-                s.style.background = colors[Math.floor(Math.random() * colors.length)];
-                s.style.animationDuration = (2 + Math.random() * 3) + 's';
+                container.appendChild(star);
+                setTimeout(() => star.remove(), 2000);
+            }, 400); // 頻度
+
+            // 2. 隠れミッキー（SVG線画）
+            const spawnMickey = () => {
+                const colors = ['#000000', '#1e366e', '#ffd700', '#d32f2f']; // 黒、青、黄、赤
+                const color = colors[Math.floor(Math.random() * colors.length)];
                 
-                container.appendChild(s);
-                setTimeout(() => s.remove(), 5000);
-            }, 300);
+                // ミッキーの形（中抜き）をSVGで生成
+                const div = document.createElement('div');
+                div.className = 'hidden-mickey';
+                // SVG: 3つの円で輪郭だけを描く
+                div.innerHTML = `
+                <svg viewBox="0 0 100 100" style="width:100%; height:100%;">
+                    <circle cx="50" cy="50" r="35" stroke="${color}" stroke-width="4" fill="none" />
+                    <circle cx="20" cy="25" r="18" stroke="${color}" stroke-width="4" fill="none" />
+                    <circle cx="80" cy="25" r="18" stroke="${color}" stroke-width="4" fill="none" />
+                </svg>`;
+
+                // 左右どちらから出るか
+                const isLeft = Math.random() > 0.5;
+                div.classList.add(isLeft ? 'mickey-left' : 'mickey-right');
+                
+                // 上下の位置をランダムに
+                div.style.top = (10 + Math.random() * 70) + '%';
+
+                container.appendChild(div);
+
+                // アニメーション実行
+                setTimeout(() => { div.classList.add('show'); }, 100);
+                setTimeout(() => { div.classList.remove('show'); }, 10000); // 10秒後戻る
+                setTimeout(() => { div.remove(); }, 14000); // 削除
+            };
+
+            // 最初の1回と、その後30秒〜90秒ごとにランダム実行
+            setTimeout(spawnMickey, 5000);
+            setInterval(() => {
+                if(Math.random() > 0.5) spawnMickey();
+            }, 30000);
         }
-        initSparkles();
+        initEffects();
 
         window.app = {
             currentPageId: 'home',
@@ -375,10 +428,8 @@
                         const m = document.createElement('div');
                         m.className = 'media-box';
 
-                        // 題名
                         if(b.mediaTitle) m.innerHTML += `<div class="media-title">${b.mediaTitle}</div>`;
 
-                        // コンテンツ
                         if(b.type === 'image') {
                             m.innerHTML += `<img src="${b.url}" style="width:100%;">`;
                         } else if(b.type === 'video') {
@@ -394,10 +445,9 @@
                         } else if(b.type === 'table') {
                             m.innerHTML += this.renderTable(b.data);
                         } else if(b.type === 'timeline') {
-                            m.innerHTML += this.renderTimeline(b.data, b.mediaTitle); // タイトルは上に表示済みだが、内部ロジックにも渡す
+                            m.innerHTML += this.renderTimeline(b.data, b.mediaTitle); 
                         }
 
-                        // 説明
                         if(b.mediaDesc) m.innerHTML += `<div class="media-desc">${this.parse(b.mediaDesc)}</div>`;
                         
                         currentMedia.appendChild(m);
@@ -406,18 +456,23 @@
             },
 
             renderTable: function(data) {
-                if(!data) return '';
+                if(!data || !Array.isArray(data)) return '';
                 let h = '<table border="1" style="width:100%; border-collapse:collapse; font-size:14px; background:white;">';
-                data.forEach(row => { h += '<tr>' + row.map(c => `<td style="padding:8px;">${this.parse(c)}</td>`).join('') + '</tr>'; });
+                data.forEach(row => { 
+                    if(Array.isArray(row)) {
+                        h += '<tr>' + row.map(c => `<td style="padding:8px;">${this.parse(c)}</td>`).join('') + '</tr>'; 
+                    }
+                });
                 return h + '</table>';
             },
 
             renderTimeline: function(data, title) {
-                if(!data) return '';
-                // タイムライン用の箱（タイトルはmedia-titleで既に表示されているので、ここでは中身だけ）
+                if(!data || !Array.isArray(data)) return '';
                 let h = `<div class="timeline-box">`;
                 data.forEach(row => {
-                    h += `<div class="timeline-row"><div class="tl-year">${row[0]}</div><div class="tl-event">${this.parse(row[1])}</div></div>`;
+                    if(Array.isArray(row) && row.length >= 2) {
+                        h += `<div class="timeline-row"><div class="tl-year">${row[0]}</div><div class="tl-event">${this.parse(row[1])}</div></div>`;
+                    }
                 });
                 h += `</div>`;
                 return h;
@@ -469,7 +524,6 @@
                         .replace(/\n/g, '<br>');
             },
 
-            // YouTube ID抽出
             getYoutubeId: function(url) {
                 const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
                 const match = url.match(regExp);
@@ -594,14 +648,12 @@
                              本文: <textarea class="b-content edit-area" style="height:100px">${data?.content || ''}</textarea>`;
                 } 
                 else if(type === 'image' || type === 'video') {
-                    // 題名と説明を追加
                     html += `<div style="margin-bottom:5px;"><b>${type === 'image' ? '画像' : '動画'}設定</b></div>
                              題名(上): <input type="text" class="b-m-title edit-area" value="${data?.mediaTitle || ''}" placeholder="表示しない場合は空欄">
-                             URL: <input type="text" class="b-url edit-area" value="${data?.url || ''}" placeholder="${type==='video' ? 'YouTube URL または 動画URL' : '画像URL'}">
+                             URL: <input type="text" class="b-url edit-area" value="${data?.url || ''}" placeholder="URL">
                              説明(下): <textarea class="b-m-desc edit-area" style="height:40px" placeholder="キャプション">${data?.mediaDesc || ''}</textarea>`;
                 } 
                 else if(type === 'table') {
-                    // 表にも題名・説明を追加
                     html += `<b>表の設定</b><br>
                              題名: <input type="text" class="b-m-title edit-area" value="${data?.mediaTitle || ''}"><br>
                              説明: <input type="text" class="b-m-desc edit-area" value="${data?.mediaDesc || ''}"><br>
@@ -613,11 +665,10 @@
                     html += `</tbody></table><button onclick="editor.addTableRow(this)" style="margin-top:5px;">+ 行追加</button>`;
                 }
                 else if(type === 'timeline') {
-                    // 時系列ブロック
                     html += `<b>時系列リスト</b><br>
                              題名: <input type="text" class="b-m-title edit-area" value="${data?.mediaTitle || ''}"><br>
                              <div class="timeline-editor-area">`;
-                    const rows = data?.data || [['1983', '開園'], ['2001', 'TDS開園']];
+                    const rows = data?.data || [['1983', '開園']];
                     rows.forEach(r => {
                         html += `<div class="tl-edit-row" style="display:flex; gap:5px; margin-bottom:5px;">
                                     <input type="text" class="tl-y" value="${r[0]}" placeholder="年" style="width:60px;">
@@ -681,6 +732,7 @@
                 el.focus(); el.setSelectionRange(s + result.length, s + result.length);
             },
 
+            // --- 重要: 保存データ収集ロジックの修正 ---
             collect: function() {
                 if(app.currentPageId === 'home') {
                     return { 
@@ -697,7 +749,10 @@
                 });
 
                 const blocks = [];
-                document.querySelectorAll('#editor-blocks-list .edit-card').forEach(el => {
+                const cards = document.querySelectorAll('#editor-blocks-list .edit-card');
+                
+                // forEachではなく通常のforループ等で処理し、確実にデータを配列化
+                cards.forEach(el => {
                     const t = el.dataset.type;
                     const b = { type: t };
                     
@@ -713,21 +768,22 @@
                         b.mediaTitle = el.querySelector('.b-m-title').value;
                         b.mediaDesc = el.querySelector('.b-m-desc').value;
                         b.data = [];
-                        // 修正：表データ収集ロジックの強化
-                        el.querySelectorAll('table.editable-table tbody tr').forEach(tr => {
+                        // DOMから確実に配列を作る
+                        const trs = el.querySelectorAll('table.editable-table tbody tr');
+                        trs.forEach(tr => {
                             const rowData = [];
-                            tr.querySelectorAll('textarea.cell').forEach(c => rowData.push(c.value));
-                            // 全て空欄の行でなければ追加
-                            if(rowData.length > 0 && rowData.some(v => v.trim() !== '')) {
-                                b.data.push(rowData);
-                            }
+                            const cells = tr.querySelectorAll('textarea.cell');
+                            cells.forEach(c => rowData.push(c.value || "")); // 空文字でもpushする
+                            if(rowData.length > 0) b.data.push(rowData);
                         });
                     } else if(t === 'timeline') {
                         b.mediaTitle = el.querySelector('.b-m-title').value;
                         b.data = [];
-                        el.querySelectorAll('.tl-edit-row').forEach(row => {
-                            const y = row.querySelector('.tl-y').value;
-                            const e = row.querySelector('.tl-e').value;
+                        const rows = el.querySelectorAll('.tl-edit-row');
+                        rows.forEach(row => {
+                            const y = row.querySelector('.tl-y').value || "";
+                            const e = row.querySelector('.tl-e').value || "";
+                            // どちらかがあれば保存
                             if(y || e) b.data.push([y, e]);
                         });
                     }
