@@ -29,7 +29,6 @@
             pointer-events: none; z-index: 9990; overflow: hidden;
         }
         
-        /* 花火用のキャンバス（最前面・操作不可） */
         #fireworks-canvas {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 9995;
@@ -60,12 +59,12 @@
             100% { transform: scale(0) rotate(90deg); opacity: 0; }
         }
 
-        /* ミッキーアニメーション（修正版） */
+        /* ミッキーアニメーション（修正版：結合シルエット） */
         .hidden-mickey {
             position: absolute;
             width: 180px; height: 180px;
             transition: transform 3s ease-in-out;
-            opacity: 0.5; /* 少し透明に */
+            opacity: 0.8; /* 少し透明 */
             filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.2));
         }
         .mickey-left { left: -200px; top: 50%; }
@@ -169,6 +168,37 @@
 
         .btn-royal { background: var(--disney-blue); color: white; border: none; padding: 10px 25px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .hidden { display: none !important; }
+
+        /* カスタムボタンデザイン（画像参考） */
+        .btn-magic-save {
+            background-color: #c5a059; /* ゴールド */
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-magic-save:hover { background-color: #b08d4b; }
+        
+        .btn-magic-back {
+            background-color: #ccc; /* グレー */
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .btn-magic-back:hover { background-color: #bbb; }
+
     </style>
 </head>
 <body>
@@ -225,8 +255,8 @@
                     <button class="t-btn" onclick="editor.addBlock('table')"><i class="fas fa-table"></i> 表</button>
                     <button class="t-btn" onclick="editor.addBlock('timeline')"><i class="fas fa-history"></i> 時系列</button>
                     <div style="flex-grow:1"></div>
-                    <button id="save-btn-main" class="t-btn" onclick="app.savePage()" style="background:var(--disney-gold); font-weight:bold;">✨ 魔法を保存</button>
-                    <button class="t-btn" onclick="app.toggleEdit()">戻る</button>
+                    <button id="save-btn-main" class="btn-magic-save" onclick="app.savePage()">✨ 魔法を保存</button>
+                    <button class="btn-magic-back" onclick="app.toggleEdit()">戻る</button>
                 </div>
 
                 <div id="edit-fields-wiki">
@@ -258,8 +288,8 @@
                         <input type="text" id="home-featured-input" class="edit-area" placeholder="Mickey, TDL, TDS">
                     </div>
                     <div style="margin-top:20px; text-align:center;">
-                        <button class="btn-royal" onclick="app.savePage()" style="background:var(--disney-gold); font-weight:bold;">✨ 魔法を保存</button>
-                        <button class="btn-royal" onclick="app.toggleEdit()" style="background:#ccc;">戻る</button>
+                        <button class="btn-magic-save" onclick="app.savePage()">✨ 魔法を保存</button>
+                        <button class="btn-magic-back" onclick="app.toggleEdit()">戻る</button>
                     </div>
                 </div>
             </div>
@@ -306,7 +336,7 @@
                 setTimeout(() => star.remove(), 2500);
             }, 300);
 
-            // 2. 隠れミッキー（修正：完全にくっついたシルエット、透明度あり）
+            // 2. 隠れミッキー（修正：画像を忠実に再現、結合シルエット）
             const spawnMickey = () => {
                 const colors = ['#000000', '#FF0000', '#0000FF', '#FFFF00', '#008000', '#800080', '#00BFFF'];
                 const color = colors[Math.floor(Math.random() * colors.length)];
@@ -315,14 +345,13 @@
                 div.className = 'hidden-mickey';
                 
                 // 座標計算に基づき、耳と顔が重なるように調整
-                // 顔: cx=50, cy=55, r=26
-                // 耳: cx=21, cy=25, r=17 (左右対称)
-                // これにより隙間なく結合します
+                // 顔: cx=50, cy=55, r=28
+                // 耳: cx=20, cy=20, r=20
                 div.innerHTML = `
                 <svg viewBox="0 0 100 100" style="width:100%; height:100%;">
-                    <circle cx="21" cy="25" r="17" fill="${color}" />
-                    <circle cx="79" cy="25" r="17" fill="${color}" />
-                    <circle cx="50" cy="55" r="26" fill="${color}" />
+                    <circle cx="20" cy="20" r="20" fill="${color}" />
+                    <circle cx="80" cy="20" r="20" fill="${color}" />
+                    <circle cx="50" cy="55" r="28" fill="${color}" />
                 </svg>`;
 
                 const isLeft = Math.random() > 0.5;
@@ -340,27 +369,59 @@
                 if(Math.random() > 0.4) spawnMickey();
             }, 30000);
 
-            // 3. 豪華な花火演出（新規追加）
+            // 3. リアルな花火演出（打ち上げ式）
             const fwCanvas = document.getElementById('fireworks-canvas');
             const ctx = fwCanvas.getContext('2d');
             let particles = [];
+            let rockets = [];
             
-            // キャンバスサイズ調整
             const resizeCanvas = () => { fwCanvas.width = window.innerWidth; fwCanvas.height = window.innerHeight; };
             window.addEventListener('resize', resizeCanvas);
             resizeCanvas();
 
-            // 花火パーティクルクラス
+            // 花火の種（打ち上げ）クラス
+            class Rocket {
+                constructor() {
+                    this.x = Math.random() * fwCanvas.width;
+                    this.y = fwCanvas.height;
+                    this.targetY = fwCanvas.height * 0.2 + Math.random() * (fwCanvas.height * 0.4);
+                    this.speed = 8 + Math.random() * 4;
+                    this.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                    this.trail = [];
+                }
+                update() {
+                    this.y -= this.speed;
+                    // 重力減速
+                    this.speed *= 0.98;
+                    // 軌跡
+                    this.trail.push({x: this.x, y: this.y, alpha: 1});
+                    if(this.trail.length > 5) this.trail.shift();
+                    this.trail.forEach(t => t.alpha -= 0.1);
+                    
+                    return this.y <= this.targetY || this.speed < 1;
+                }
+                draw(c) {
+                    c.save();
+                    c.fillStyle = this.color;
+                    this.trail.forEach(t => {
+                        c.globalAlpha = t.alpha;
+                        c.fillRect(t.x, t.y, 2, 6);
+                    });
+                    c.restore();
+                }
+            }
+
+            // 花火の爆発パーティクル
             class Particle {
                 constructor(x, y, color) {
                     this.x = x; this.y = y; this.color = color;
                     const angle = Math.random() * Math.PI * 2;
-                    const speed = Math.random() * 4 + 2;
+                    const speed = Math.random() * 5 + 1;
                     this.vx = Math.cos(angle) * speed;
                     this.vy = Math.sin(angle) * speed;
                     this.alpha = 1;
                     this.gravity = 0.05;
-                    this.decay = Math.random() * 0.015 + 0.005;
+                    this.decay = Math.random() * 0.01 + 0.005;
                 }
                 update() {
                     this.vy += this.gravity;
@@ -372,47 +433,49 @@
                     c.globalAlpha = this.alpha;
                     c.fillStyle = this.color;
                     c.beginPath();
-                    c.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                    c.arc(this.x, this.y, 2, 0, Math.PI * 2);
                     c.fill();
                     c.restore();
                 }
             }
 
-            // 花火打ち上げロジック
-            const launchFirework = () => {
-                // 右下から
-                const startX = fwCanvas.width * 0.9;
-                const startY = fwCanvas.height;
-                const targetX = startX - Math.random() * 200 - 100;
-                const targetY = startY - Math.random() * (fwCanvas.height * 0.6) - 200;
-                
-                // 簡易的に爆発地点でパーティクル生成
-                const colors = ['#FFD700', '#FF0000', '#00FFFF', '#FF00FF', '#00FF00', '#FFFFFF'];
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                
-                for(let i=0; i<80; i++) {
-                    particles.push(new Particle(targetX, targetY, color));
-                }
-            };
-
-            // アニメーションループ
             const animate = () => {
+                // 残像を残す
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; 
                 ctx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
-                particles = particles.filter(p => p.alpha > 0);
-                particles.forEach(p => { p.update(); p.draw(ctx); });
+
+                // ロケット処理
+                for(let i = rockets.length - 1; i >= 0; i--) {
+                    rockets[i].draw(ctx);
+                    if(rockets[i].update()) {
+                        // 爆発！
+                        const r = rockets[i];
+                        for(let j=0; j<60; j++) {
+                            particles.push(new Particle(r.x, r.y, r.color));
+                        }
+                        rockets.splice(i, 1);
+                    }
+                }
+
+                // パーティクル処理
+                for(let i = particles.length - 1; i >= 0; i--) {
+                    particles[i].draw(ctx);
+                    particles[i].update();
+                    if(particles[i].alpha <= 0) particles.splice(i, 1);
+                }
                 requestAnimationFrame(animate);
             };
             animate();
 
-            // 1分に1回、10秒間花火ショー
+            // 1分に1回、数発打ち上げ
             setInterval(() => {
                 let count = 0;
                 const interval = setInterval(() => {
-                    launchFirework();
+                    rockets.push(new Rocket());
                     count++;
-                    if(count > 15) clearInterval(interval); // 10秒間で約15発
-                }, 600);
-            }, 60000); // 60000ms = 1分
+                    if(count > 8) clearInterval(interval); 
+                }, 800);
+            }, 60000); 
         }
         initEffects();
 
@@ -656,19 +719,20 @@
 
             savePage: async function() {
                 try {
-                    const btn = document.getElementById('save-btn-main');
-                    if(btn) btn.textContent = "保存中...";
+                    // ボタンの文字を変える演出
+                    const btns = document.querySelectorAll('.btn-magic-save');
+                    btns.forEach(b => b.textContent = "保存中...");
                     
                     const updated = editor.collect();
                     await setDoc(doc(db, "pages", this.currentPageId), updated);
                     
-                    // アラートは削除し、ボタンの表示で完了を通知
-                    if(btn) btn.textContent = "保存完了！";
+                    // アラートなしで完了
+                    btns.forEach(b => b.textContent = "保存完了！");
                     setTimeout(() => { location.reload(); }, 500);
                 } catch(e) {
                     alert("保存に失敗しました: " + e.message);
                     console.error(e);
-                    if(document.getElementById('save-btn-main')) document.getElementById('save-btn-main').textContent = "✨ 魔法を保存";
+                    document.querySelectorAll('.btn-magic-save').forEach(b => b.textContent = "✨ 魔法を保存");
                 }
             }
         };
@@ -683,6 +747,8 @@
 
                 document.getElementById('edit-fields-wiki').classList.toggle('hidden', isHome);
                 document.getElementById('edit-fields-home').classList.toggle('hidden', !isHome);
+                // トップページ編集時はツールバー（文字装飾など）を隠す
+                document.getElementById('editor-toolbar-box').classList.toggle('hidden', isHome);
 
                 if(isHome) {
                     document.getElementById('home-featured-input').value = (data.featured || []).join(', ');
@@ -694,7 +760,6 @@
                     (data.infobox?.rows || []).forEach(r => this.addIbRow(r.key, r.value));
                     
                     this.blocksContainer.innerHTML = '';
-                    // データを読み込み、古い形式（配列）ならそのまま、新しい形式（JSON文字列）ならパースして表示
                     (data.blocks || []).forEach(b => {
                         let blockForEditor = { ...b };
                         if ((b.type === 'table' || b.type === 'timeline') && typeof b.data === 'string') {
@@ -839,10 +904,16 @@
                             html += `<div class="tl-edit-row">
                                         <input class="edit-area tl-y-input" value="${row[0]||''}" placeholder="年/月">
                                         <input class="edit-area tl-e-input" value="${row[1]||''}" placeholder="出来事">
-                                        <button onclick="this.parentElement.remove()">×</button>
+                                        <button onclick="editor.moveRowUp(this)" style="margin-left:5px;">▲</button>
+                                        <button onclick="editor.moveRowDown(this)">▼</button>
+                                        <button onclick="this.parentElement.remove()" style="margin-left:5px; color:red;">×</button>
                                      </div>`;
                         });
-                        html += `<button class="t-btn" onclick="editor.addTlRow(this)" style="margin-top:5px; width:100%;">+ 行を追加</button></div>`;
+                        html += `</div>
+                                 <div style="margin-top:5px; display:flex; gap:5px;">
+                                    <button class="t-btn" onclick="editor.addTlRow(this)" style="flex:1;">+ 行を追加</button>
+                                    <button class="t-btn" onclick="editor.sortTimeline(this)" style="flex:1; background:#e0f7fa;">古い順に並び替え</button>
+                                 </div>`;
                     }
 
                     html += `<textarea class="edit-area media-desc-input" placeholder="説明文 (任意)" style="height:60px; margin-top:5px;">${b.mediaDesc||''}</textarea>`;
@@ -895,8 +966,37 @@
                 div.className = 'tl-edit-row';
                 div.innerHTML = `<input class="edit-area tl-y-input" placeholder="年/月">
                                  <input class="edit-area tl-e-input" placeholder="出来事">
-                                 <button onclick="this.parentElement.remove()">×</button>`;
-                btn.parentElement.insertBefore(div, btn);
+                                 <button onclick="editor.moveRowUp(this)" style="margin-left:5px;">▲</button>
+                                 <button onclick="editor.moveRowDown(this)">▼</button>
+                                 <button onclick="this.parentElement.remove()" style="margin-left:5px; color:red;">×</button>`;
+                // 挿入先は .timeline-editor-area
+                btn.parentElement.previousElementSibling.appendChild(div);
+            },
+
+            moveRowUp: function(btn) {
+                const row = btn.parentElement;
+                if (row.previousElementSibling) {
+                    row.parentNode.insertBefore(row, row.previousElementSibling);
+                }
+            },
+
+            moveRowDown: function(btn) {
+                const row = btn.parentElement;
+                if (row.nextElementSibling) {
+                    row.parentNode.insertBefore(row.nextElementSibling, row);
+                }
+            },
+
+            sortTimeline: function(btn) {
+                const area = btn.parentElement.previousElementSibling;
+                const rows = Array.from(area.querySelectorAll('.tl-edit-row'));
+                rows.sort((a, b) => {
+                    const valA = a.querySelector('.tl-y-input').value;
+                    const valB = b.querySelector('.tl-y-input').value;
+                    // 数値として比較（文字列含む場合は辞書順）
+                    return valA.localeCompare(valB, undefined, {numeric: true, sensitivity: 'base'});
+                });
+                rows.forEach(r => area.appendChild(r));
             }
         };
         
@@ -904,4 +1004,3 @@
     </script>
 </body>
 </html>
-
