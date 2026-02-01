@@ -24,25 +24,19 @@
         }
 
         /* --- 演出関連 --- */
-        #effects-canvas {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 9990; overflow: hidden;
+        #effects-canvas, #fireworks-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
         }
-        
-        #fireworks-canvas {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 9995;
-        }
+        #effects-canvas { z-index: 9990; }
+        #fireworks-canvas { z-index: 9995; }
 
-        /* キラキラ演出 */
+        /* キラキラ */
         .sparkle-cross {
-            position: absolute;
-            width: 20px; height: 20px;
+            position: absolute; width: 20px; height: 20px;
             background: radial-gradient(circle, rgba(255,255,255,1) 10%, rgba(255,255,255,0.6) 40%, rgba(255,255,255,0) 70%);
-            border-radius: 50%;
-            opacity: 0;
+            border-radius: 50%; opacity: 0;
             animation: flashSparkle 2.0s ease-in-out forwards;
-            filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+            filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.9));
         }
         .sparkle-cross::after, .sparkle-cross::before {
             content: ''; position: absolute; top: 50%; left: 50%;
@@ -59,12 +53,10 @@
             100% { transform: scale(0) rotate(90deg); opacity: 0; }
         }
 
-        /* ミッキーアニメーション */
+        /* ミッキー */
         .hidden-mickey {
-            position: absolute;
-            width: 180px; height: 180px;
-            transition: transform 3s ease-in-out;
-            opacity: 0.8;
+            position: absolute; width: 180px; height: 180px;
+            transition: transform 3s ease-in-out; opacity: 0.8;
             filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.2));
         }
         .mickey-left { left: -200px; top: 50%; }
@@ -72,7 +64,7 @@
         .mickey-right { right: -200px; top: 50%; }
         .mickey-right.show { transform: translateX(-250px) rotate(-15deg); }
 
-        /* ヘッダー */
+        /* UIコンポーネント */
         header {
             background: linear-gradient(135deg, var(--disney-blue), #0d1b38);
             color: white; padding: 10px 30px; border-bottom: 3px solid var(--disney-gold);
@@ -97,6 +89,7 @@
         .sidebar { width: 280px; padding: 20px; background: #fbfbfb; border-right: 1px solid #eee; }
         .main-content { flex: 1; padding: 40px; box-sizing: border-box; }
 
+        /* コンテンツスタイル */
         .page-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid #aaa; margin-bottom: 20px; padding-bottom: 10px; }
         .intro-container { display: flex; gap: 30px; margin-bottom: 30px; align-items: flex-start; }
         .fixed-summary { flex: 1; font-size: 1.1em; line-height: 1.8; white-space: pre-wrap; }
@@ -113,39 +106,62 @@
         h2 { border-bottom: 1px solid #aaa; color: var(--disney-blue); margin-top: 40px; padding-bottom: 5px; font-size: 1.8em; }
         h3 { color: var(--disney-blue); margin-top: 25px; font-size: 1.4em; border-bottom: 1px dashed #ccc; }
 
-        .media-box { border: 1px solid #eee; background: #fafafa; padding: 5px; text-align: center; }
+        .media-box { border: 1px solid #eee; background: #fafafa; padding: 5px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .media-box:hover { box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         .media-title { font-weight: bold; font-size: 0.9em; margin-bottom: 5px; color: var(--disney-blue); }
         .media-desc { font-size: 0.85em; color: #555; margin-top: 5px; line-height: 1.4; }
         
-        .timeline-box { border: 1px solid #ccc; padding: 10px; background: white; }
+        .timeline-box { border: 1px solid #ccc; padding: 10px; background: white; cursor: default; }
         .timeline-row { display: flex; border-bottom: 1px dashed #eee; padding: 8px 0; }
         .tl-year { width: 70px; font-weight: bold; color: var(--disney-blue); flex-shrink: 0; text-align: right; padding-right: 15px; border-right: 2px solid var(--disney-gold); }
         .tl-event { padding-left: 15px; flex: 1; text-align: left; font-size: 0.95em; }
 
-        .wiki-table { width: 100%; border-collapse: collapse; font-size: 14px; background: white; }
+        .wiki-table { width: 100%; border-collapse: collapse; font-size: 14px; background: white; cursor: default; }
         .wiki-table th, .wiki-table td { border: 1px solid #ccc; padding: 8px; text-align: left; }
         .wiki-table th { background: #f0f0f0; font-weight: bold; text-align: center; }
 
-        .video-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8);
+        /* モーダル（動画・画像共通） */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85);
             z-index: 99999; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s;
         }
-        .video-modal.active { opacity: 1; pointer-events: auto; }
-        .video-modal-content { position: relative; width: 80%; max-width: 900px; aspect-ratio: 16/9; background: black; box-shadow: 0 0 20px white; }
-        .video-modal-close { position: absolute; top: -40px; right: 0; color: white; font-size: 30px; cursor: pointer; }
+        .modal.active { opacity: 1; pointer-events: auto; }
+        .modal-content { position: relative; width: 80%; max-width: 900px; max-height: 90vh; background: black; box-shadow: 0 0 20px white; display:flex; justify-content:center; align-items:center; }
+        .modal-close { position: absolute; top: -40px; right: 0; color: white; font-size: 30px; cursor: pointer; }
+        
+        /* 画像マーカー */
+        .img-marker-container { position: relative; display: inline-block; max-width: 100%; max-height: 80vh; }
+        .img-marker-container img { max-width: 100%; max-height: 80vh; display: block; }
+        .img-marker {
+            position: absolute; width: 24px; height: 24px; transform: translate(-50%, -50%);
+            border-radius: 50%; cursor: pointer; z-index: 10;
+            box-shadow: 0 0 5px rgba(255,255,255,0.8);
+            border: 2px solid white;
+        }
+        .img-marker::after {
+            content: attr(data-text); position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 5px 10px; border-radius: 4px; font-size: 12px;
+            white-space: nowrap; opacity: 0; transition: 0.2s; pointer-events: none;
+        }
+        .img-marker:hover::after { opacity: 1; }
+        
+        /* マーカー色定義 */
+        .m-transparent { background: rgba(255,255,255,0.2); border: 2px dashed rgba(255,255,255,0.8); }
+        .m-black { background: black; }
+        .m-red { background: #ff3b30; }
+        .m-blue { background: #007aff; }
+        .m-green { background: #34c759; }
+        .m-yellow { background: #ffcc00; }
 
         .toc-list { list-style: none; padding: 0; font-size: 14px; }
         .toc-link { color: #0645ad; text-decoration: none; cursor: pointer; display: block; padding: 3px 0; }
         .toc-link:hover { text-decoration: underline; }
 
-        /* 編集バーのデザイン（修正：1列・折り返しなし） */
+        /* エディタ */
         .editor-toolbar {
             background: #f8f9fa; border: 1px solid #ccc; padding: 8px;
             display: flex; gap: 5px; position: sticky; top: 60px; z-index: 1000; margin-bottom: 20px;
-            flex-wrap: nowrap; /* 1列に強制 */
-            align-items: center;
-            overflow-x: auto; /* 幅が足りない場合は横スクロール */
-            white-space: nowrap;
+            flex-wrap: nowrap; align-items: center; overflow-x: auto; white-space: nowrap;
         }
         .t-btn { background: white; border: 1px solid #ccc; padding: 5px 10px; cursor: pointer; border-radius: 3px; font-family: sans-serif; white-space: nowrap; }
         .t-btn:hover { background: #eee; }
@@ -158,7 +174,6 @@
         .editable-table td { border: 1px solid #ccc; padding: 0; }
         .editable-table textarea { width: 100%; border: none; padding: 8px; box-sizing: border-box; outline: none; resize: vertical; min-height: 50px; font-family: inherit; }
 
-        /* タイムライン編集行（ドラッグ対応） */
         .tl-edit-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; background: #fff; padding: 5px; border: 1px solid #eee; border-radius: 4px; }
         .tl-handle { cursor: grab; color: #aaa; padding: 0 5px; font-size: 14px; }
         .tl-y-input { width: 80px !important; }
@@ -173,7 +188,6 @@
         .btn-royal { background: var(--disney-blue); color: white; border: none; padding: 10px 25px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .hidden { display: none !important; }
 
-        /* 保存・戻るボタン */
         .btn-magic-save {
             background-color: #c5a059; color: white; border: none; padding: 8px 18px; border-radius: 6px;
             font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -192,10 +206,10 @@
     <div id="effects-canvas"></div>
     <canvas id="fireworks-canvas"></canvas>
 
-    <div id="video-modal" class="video-modal" onclick="app.closeVideo()">
-        <div class="video-modal-content" onclick="event.stopPropagation()">
-            <div class="video-modal-close" onclick="app.closeVideo()">× 閉じる</div>
-            <div id="video-frame-container" style="width:100%; height:100%;"></div>
+    <div id="media-modal" class="modal" onclick="app.closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-close" onclick="app.closeModal()">× 閉じる</div>
+            <div id="modal-body" style="width:100%; height:100%; display:flex; justify-content:center; align-items:center;"></div>
         </div>
     </div>
 
@@ -234,12 +248,14 @@
                     <button class="t-btn" onmousedown="event.preventDefault(); editor.apply('<u>','</u>')"><u>U</u></button>
                     <button class="t-btn" onmousedown="event.preventDefault(); editor.applyLink('internal')"><i class="fas fa-link"></i></button>
                     <button class="t-btn" onmousedown="event.preventDefault(); editor.applyLink('external')"><i class="fas fa-external-link-alt"></i></button>
+                    <button class="t-btn" onclick="editor.autoLink()" style="color:var(--disney-blue);"><i class="fas fa-magic"></i> 自動リンク</button>
                     <div style="width:1px; background:#ccc; height:20px; margin:0 5px;"></div>
                     <button class="t-btn" onclick="editor.addBlock('image')"><i class="fas fa-image"></i> 画像</button>
                     <button class="t-btn" onclick="editor.addBlock('video')"><i class="fas fa-video"></i> 動画</button>
                     <button class="t-btn" onclick="editor.addBlock('table')"><i class="fas fa-table"></i> 表</button>
                     <button class="t-btn" onclick="editor.addBlock('timeline')"><i class="fas fa-history"></i> 時系列</button>
-                    <div style="flex-grow:1; min-width:20px;"></div> <button id="save-btn-main" class="btn-magic-save" onclick="app.savePage()">✨ 魔法を保存</button>
+                    <div style="flex-grow:1; min-width:20px;"></div> 
+                    <button id="save-btn-main" class="btn-magic-save" onclick="app.savePage()">✨ 魔法を保存</button>
                     <button class="btn-magic-back" onclick="app.toggleEdit()">戻る</button>
                 </div>
 
@@ -299,14 +315,13 @@
         const db = getFirestore(fApp);
         const provider = new GoogleAuthProvider();
 
-        let activeInput = null;
-
         // --- 演出スクリプト ---
         function initEffects() {
             const container = document.getElementById('effects-canvas');
             
             // 1. キラキラ
             setInterval(() => {
+                if(document.hidden) return; 
                 const star = document.createElement('div');
                 star.className = 'sparkle-cross';
                 const isLeft = Math.random() > 0.5;
@@ -320,6 +335,7 @@
 
             // 2. 隠れミッキー
             const spawnMickey = () => {
+                if(document.hidden) return;
                 const colors = ['#000000', '#FF0000', '#0000FF', '#FFFF00', '#008000', '#800080', '#00BFFF'];
                 const color = colors[Math.floor(Math.random() * colors.length)];
                 const div = document.createElement('div');
@@ -335,7 +351,7 @@
             };
             setInterval(() => { if(Math.random() > 0.4) spawnMickey(); }, 30000);
 
-            // 3. リアルな花火演出（パフォーマンス改善版）
+            // 3. 花火（軽量化済み）
             const fwCanvas = document.getElementById('fireworks-canvas');
             const ctx = fwCanvas.getContext('2d');
             let particles = [];
@@ -388,6 +404,7 @@
             }
 
             const animate = () => {
+                if(document.hidden) { requestAnimationFrame(animate); return; } // 裏では描画停止
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; 
                 ctx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
                 for(let i = rockets.length - 1; i >= 0; i--) {
@@ -406,10 +423,8 @@
             };
             animate();
 
-            // 【重要改善】タブが非アクティブ(裏)の時は花火を追加しない
             setInterval(() => {
-                if (document.hidden) return; // ← これで放置時の重さを解消
-                
+                if (document.hidden) return; 
                 let count = 0;
                 const interval = setInterval(() => {
                     rockets.push(new Rocket());
@@ -420,6 +435,7 @@
         }
         initEffects();
 
+        // --- App Logic ---
         window.app = {
             currentPageId: 'home',
             currentUser: null,
@@ -503,7 +519,9 @@
                         if(b.mediaTitle) m.innerHTML += `<div class="media-title">${b.mediaTitle}</div>`;
 
                         if(b.type === 'image') {
-                            m.innerHTML += `<img src="${b.url}" style="width:100%;">`;
+                            // 画像クリックでモーダル表示
+                            const markersJson = b.markers ? JSON.stringify(b.markers).replace(/"/g, '&quot;') : '[]';
+                            m.innerHTML += `<div onclick='app.openImageModal("${b.url}", ${markersJson})'><img src="${b.url}" style="width:100%;"></div>`;
                         } else if(b.type === 'video') {
                             const ytId = this.getYoutubeId(b.url);
                             if(ytId) {
@@ -527,238 +545,162 @@
                 });
             },
 
+            // 正規表現の修正（太字・斜体・Wikiリンク・外部リンク）
+            parse: function(t) {
+                if(!t) return '';
+                let html = t
+                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') // 太字
+                    .replace(/\*(.*?)\*/g, '<i>$1</i>') // 斜体
+                    .replace(/~~(.*?)~~/g, '<s>$1</s>') // 取消線
+                    .replace(/<u>(.*?)<\/u>/g, '<u>$1</u>') // 下線
+                    .replace(/\[\[(.*?)\]\]/g, '<a href="#$1" style="color:#0645ad; font-weight:bold;">$1</a>') // Wikiリンク
+                    .replace(/\[(https?:\/\/[^\s]+)\s+(.*?)\]/g, '<a href="$1" target="_blank" style="color:#36b;">$2 <i class="fas fa-external-link-alt" style="font-size:0.8em"></i></a>') // 外部リンク [url text]
+                    .replace(/\n/g, '<br>'); // 改行
+                return html;
+            },
+
+            // --- モーダル制御 ---
+            openVideo: function(id) {
+                const b = document.getElementById('modal-body');
+                b.innerHTML = `<div id="video-frame-container" style="width:80%; aspect-ratio:16/9;"><iframe width="100%" height="100%" src="https://www.youtube.com/embed/${id}?autoplay=1" frameborder="0" allowfullscreen></iframe></div>`;
+                document.getElementById('media-modal').classList.add('active');
+            },
+            
+            openImageModal: function(url, markers=[]) {
+                const b = document.getElementById('modal-body');
+                let html = `<div class="img-marker-container"><img src="${url}">`;
+                markers.forEach(m => {
+                    // マーカークリック時の動作：リンクがあれば飛ぶ
+                    const clickAction = m.link ? (m.link.startsWith('http') ? `window.open('${m.link}')` : `location.hash='${m.link}'; app.closeModal();`) : '';
+                    html += `<div class="img-marker m-${m.color}" style="top:${m.y}%; left:${m.x}%;" data-text="${m.text}" onclick="${clickAction}"></div>`;
+                });
+                html += `</div>`;
+                b.innerHTML = html;
+                document.getElementById('media-modal').classList.add('active');
+            },
+
+            closeModal: function() {
+                document.getElementById('media-modal').classList.remove('active');
+                document.getElementById('modal-body').innerHTML = '';
+            },
+
+            // その他（既存）
             renderTable: function(data) {
                 if(!data || !Array.isArray(data)) return '';
                 let h = '<table class="wiki-table">';
-                data.forEach((row, idx) => { 
-                    if(Array.isArray(row)) {
-                        h += '<tr>';
-                        row.forEach(c => { h += (idx === 0) ? `<th>${this.parse(c)}</th>` : `<td>${this.parse(c)}</td>`; });
-                        h += '</tr>'; 
-                    }
-                });
+                data.forEach((row, idx) => { if(Array.isArray(row)) { h += '<tr>'; row.forEach(c => { h += (idx === 0) ? `<th>${this.parse(c)}</th>` : `<td>${this.parse(c)}</td>`; }); h += '</tr>'; }});
                 return h + '</table>';
             },
-
             renderTimeline: function(data) {
                 if(!data || !Array.isArray(data)) return '';
                 let h = `<div class="timeline-box">`;
-                data.forEach(row => {
-                    if(Array.isArray(row) && row.length >= 2) {
-                        h += `<div class="timeline-row"><div class="tl-year">${row[0]}</div><div class="tl-event">${this.parse(row[1])}</div></div>`;
-                    }
-                });
-                h += `</div>`;
-                return h;
+                data.forEach(row => { if(Array.isArray(row) && row.length >= 2) h += `<div class="timeline-row"><div class="tl-year">${row[0]}</div><div class="tl-event">${this.parse(row[1])}</div></div>`; });
+                return h + `</div>`;
             },
-
-            renderHome: async function(container) {
-                const grid = document.createElement('div');
-                grid.className = 'home-grid';
+            renderHome: async function(c) {
+                const g = document.createElement('div'); g.className = 'home-grid';
                 for(const id of (this.data.featured || [])) {
-                    if(!id) continue;
                     const s = await getDoc(doc(db, "pages", id.trim()));
-                    if(s.exists()){
-                        const d = s.data();
-                        const img = d.infobox?.image || '';
-                        grid.innerHTML += `<div class="page-card" onclick="location.hash='${id.trim()}'"><img src="${img}" class="card-img"><div class="card-body">${d.title}</div></div>`;
-                    }
+                    if(s.exists()){ const d = s.data(); const img = d.infobox?.image || ''; g.innerHTML += `<div class="page-card" onclick="location.hash='${id.trim()}'"><img src="${img}" class="card-img"><div class="card-body">${d.title}</div></div>`; }
                 }
-                container.appendChild(grid);
+                c.appendChild(g);
             },
-
             renderTOC: function() {
-                const list = document.getElementById('toc-list');
-                list.innerHTML = '';
-                (this.data.blocks || []).forEach((b, i) => {
-                    if(b.type === 'section') {
-                        const li = document.createElement('li');
-                        li.style.marginLeft = b.level == 3 ? '15px' : '0';
-                        li.innerHTML = `<a class="toc-link" onclick="app.scrollToBlock(${i})">${b.heading || '（無題）'}</a>`;
-                        list.appendChild(li);
-                    }
-                });
+                const l = document.getElementById('toc-list'); l.innerHTML = '';
+                (this.data.blocks || []).forEach((b, i) => { if(b.type === 'section') { const li = document.createElement('li'); li.style.marginLeft = b.level == 3 ? '15px' : '0'; li.innerHTML = `<a class="toc-link" onclick="app.scrollToBlock(${i})">${b.heading || '（無題）'}</a>`; l.appendChild(li); }});
             },
-
-            scrollToBlock: function(i) {
-                const isEdit = !document.getElementById('edit-mode').classList.contains('hidden');
-                const id = isEdit ? `edit-card-${i}` : `sec-${i}`;
-                const el = document.getElementById(id);
-                if(el) window.scrollTo({ top: el.offsetTop - 80, behavior: 'smooth' });
-            },
-
-            parse: function(t) {
-                if(!t) return '';
-                return t.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>').replace(/~~(.*?)~~/g, '<s>$1</s>').replace(/<u>(.*?)<\/u>/g, '<u>$1</u>').replace(/\[\[(.*?)\]\]/g, '<a href="#$1" style="color:#0645ad">$1</a>').replace(/\[(https?:\/\/\S+)\s+(.+?)\]/g, '<a href="$1" target="_blank" style="color:#36b">$2 <i class="fas fa-external-link-alt" style="font-size:10px"></i></a>').replace(/\n/g, '<br>');
-            },
-
-            getYoutubeId: function(url) {
-                const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-                const match = url.match(regExp);
-                return (match && match[7].length == 11) ? match[7] : false;
-            },
-
-            openVideo: function(id) {
-                const modal = document.getElementById('video-modal');
-                const con = document.getElementById('video-frame-container');
-                con.innerHTML = `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/${id}?autoplay=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-                modal.classList.add('active');
-            },
-
-            closeVideo: function() {
-                const modal = document.getElementById('video-modal');
-                modal.classList.remove('active');
-                document.getElementById('video-frame-container').innerHTML = '';
-            },
-
+            scrollToBlock: function(i) { const el = document.getElementById(`sec-${i}`); if(el) window.scrollTo({ top: el.offsetTop - 80, behavior: 'smooth' }); },
+            getYoutubeId: function(url) { const m = url.match(/^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/); return (m && m[7].length == 11) ? m[7] : false; },
             searchLive: async function(val) {
                 const res = document.getElementById('search-results');
                 if(!val) { res.style.display = 'none'; return; }
                 const snap = await getDocs(query(collection(db, "pages")));
                 res.innerHTML = ''; let count = 0;
-                snap.forEach(d => {
-                    if(d.id.toLowerCase().includes(val.toLowerCase()) && count < 8) {
-                        const item = document.createElement('div'); item.className = 'search-item'; item.textContent = d.id;
-                        item.onclick = () => { location.hash = d.id; res.style.display = 'none'; document.getElementById('search-input').value=''; };
-                        res.appendChild(item); count++;
-                    }
-                });
+                snap.forEach(d => { if(d.id.toLowerCase().includes(val.toLowerCase()) && count < 8) { const item = document.createElement('div'); item.className = 'search-item'; item.textContent = d.id; item.onclick = () => { location.hash = d.id; res.style.display = 'none'; document.getElementById('search-input').value=''; }; res.appendChild(item); count++; }});
                 res.style.display = count > 0 ? 'block' : 'none';
             },
-
-            createNewPage: async function() {
-                const id = prompt("新しいページのタイトル（ID）を入力してください:");
-                if(id) { location.hash = id; setTimeout(() => { this.toggleEdit(); }, 1000); }
-            },
-
+            createNewPage: async function() { const id = prompt("新しいページのタイトル（ID）を入力してください:"); if(id) { location.hash = id; setTimeout(() => { this.toggleEdit(); }, 1000); } },
             toggleEdit: function() {
                 if(!this.currentUser) return alert('編集するにはログインしてください');
-                document.getElementById('view-mode').classList.toggle('hidden');
-                document.getElementById('edit-mode').classList.toggle('hidden');
-                
-                // トップページ編集時はツールバーを隠す
-                const isHome = this.currentPageId === 'home';
-                document.getElementById('editor-toolbar-box').classList.toggle('hidden', isHome);
-                
+                document.getElementById('view-mode').classList.toggle('hidden'); document.getElementById('edit-mode').classList.toggle('hidden');
+                document.getElementById('editor-toolbar-box').classList.toggle('hidden', this.currentPageId === 'home');
                 if(!document.getElementById('edit-mode').classList.contains('hidden')) editor.load();
             },
-
             savePage: async function() {
                 try {
-                    const btns = document.querySelectorAll('.btn-magic-save');
-                    btns.forEach(b => b.textContent = "保存中...");
+                    document.querySelectorAll('.btn-magic-save').forEach(b => b.textContent = "保存中...");
                     const updated = editor.collect();
                     await setDoc(doc(db, "pages", this.currentPageId), updated);
-                    btns.forEach(b => b.textContent = "保存完了！");
+                    document.querySelectorAll('.btn-magic-save').forEach(b => b.textContent = "保存完了！");
                     setTimeout(() => { location.reload(); }, 500);
-                } catch(e) {
-                    alert("保存に失敗しました: " + e.message);
-                    console.error(e);
-                    document.querySelectorAll('.btn-magic-save').forEach(b => b.textContent = "✨ 魔法を保存");
-                }
+                } catch(e) { alert("保存失敗: " + e.message); console.error(e); }
             }
         };
 
         // --- Editor Logic ---
         window.editor = {
             blocksContainer: document.getElementById('editor-blocks-list'),
+            currentEditingImgBlock: null, // マーカー編集中のブロック参照
             
             load: function() {
                 const data = app.data;
                 const isHome = app.currentPageId === 'home';
-
                 document.getElementById('edit-fields-wiki').classList.toggle('hidden', isHome);
                 document.getElementById('edit-fields-home').classList.toggle('hidden', !isHome);
-
                 if(isHome) {
                     document.getElementById('home-featured-input').value = (data.featured || []).join(', ');
                 } else {
                     document.getElementById('edit-summary').value = data.summary || '';
                     document.getElementById('edit-ib-img').value = data.infobox?.image || '';
-                    const ibCon = document.getElementById('ib-rows-container');
-                    ibCon.innerHTML = '';
+                    const ibCon = document.getElementById('ib-rows-container'); ibCon.innerHTML = '';
                     (data.infobox?.rows || []).forEach(r => this.addIbRow(r.key, r.value));
                     
                     this.blocksContainer.innerHTML = '';
                     (data.blocks || []).forEach(b => {
                         let blockForEditor = { ...b };
-                        if ((b.type === 'table' || b.type === 'timeline') && typeof b.data === 'string') {
-                            try { blockForEditor.data = JSON.parse(b.data); } catch(e) { blockForEditor.data = []; }
-                        }
+                        if ((b.type === 'table' || b.type === 'timeline') && typeof b.data === 'string') { try { blockForEditor.data = JSON.parse(b.data); } catch(e) { blockForEditor.data = []; } }
                         this.renderBlock(blockForEditor);
                     });
-                    
                     new Sortable(this.blocksContainer, { handle: '.edit-card-handle', animation: 150 });
                 }
             },
 
             collect: function() {
-                const isHome = app.currentPageId === 'home';
-                if(isHome) {
-                    const raw = document.getElementById('home-featured-input').value;
-                    return {
-                        title: 'Home',
-                        featured: raw.split(',').map(s => s.trim()).filter(s => s)
-                    };
-                }
-
+                if(app.currentPageId === 'home') { return { title: 'Home', featured: document.getElementById('home-featured-input').value.split(',').map(s=>s.trim()).filter(s=>s) }; }
                 const blocks = [];
                 this.blocksContainer.querySelectorAll('.edit-block-item').forEach(el => {
                     const type = el.dataset.type;
                     let blockData = { type: type };
-                    const mTitle = el.querySelector('.media-title-input');
-                    if(mTitle && mTitle.value) blockData.mediaTitle = mTitle.value;
-                    const mDesc = el.querySelector('.media-desc-input');
-                    if(mDesc && mDesc.value) blockData.mediaDesc = mDesc.value;
+                    const mTitle = el.querySelector('.media-title-input'); if(mTitle) blockData.mediaTitle = mTitle.value;
+                    const mDesc = el.querySelector('.media-desc-input'); if(mDesc) blockData.mediaDesc = mDesc.value;
 
                     if(type === 'section') {
                         blockData.level = el.querySelector('select').value;
                         blockData.heading = el.querySelector('.heading-input').value;
                         blockData.content = el.querySelector('.content-input').value;
-                    } 
-                    else if(type === 'image' || type === 'video') {
+                    } else if(type === 'image') {
                         blockData.url = el.querySelector('.url-input').value;
-                    }
-                    else if(type === 'table') {
-                        const rows = [];
-                        el.querySelectorAll('tr').forEach(tr => {
-                            const cells = [];
-                            tr.querySelectorAll('textarea').forEach(ta => cells.push(ta.value));
-                            if(cells.length > 0) rows.push(cells);
-                        });
+                        // マーカーデータの収集（隠しフィールドから）
+                        const markersJson = el.querySelector('.markers-input').value;
+                        try { blockData.markers = JSON.parse(markersJson); } catch(e) { blockData.markers = []; }
+                    } else if(type === 'video') {
+                        blockData.url = el.querySelector('.url-input').value;
+                    } else if(type === 'table') {
+                        const rows = []; el.querySelectorAll('tr').forEach(tr => { const cells = []; tr.querySelectorAll('textarea').forEach(ta => cells.push(ta.value)); if(cells.length > 0) rows.push(cells); });
                         blockData.data = JSON.stringify(rows);
-                    }
-                    else if(type === 'timeline') {
-                        const tlData = [];
-                        el.querySelectorAll('.tl-edit-row').forEach(row => {
-                            const y = row.querySelector('.tl-y-input').value;
-                            const e = row.querySelector('.tl-e-input').value;
-                            if(y || e) tlData.push([y, e]);
-                        });
+                    } else if(type === 'timeline') {
+                        const tlData = []; el.querySelectorAll('.tl-edit-row').forEach(row => { tlData.push([row.querySelector('.tl-y-input').value, row.querySelector('.tl-e-input').value]); });
                         blockData.data = JSON.stringify(tlData);
                     }
                     blocks.push(blockData);
                 });
-
-                const ibRows = [];
-                document.getElementById('ib-rows-container').querySelectorAll('.ib-row').forEach(div => {
-                    const inputs = div.querySelectorAll('input');
-                    if(inputs[0].value) ibRows.push({ key: inputs[0].value, value: inputs[1].value });
-                });
-
-                return {
-                    title: app.data.title,
-                    summary: document.getElementById('edit-summary').value,
-                    infobox: { image: document.getElementById('edit-ib-img').value, rows: ibRows },
-                    blocks: blocks
-                };
+                const ibRows = []; document.querySelectorAll('.ib-row').forEach(row => { ibRows.push({ key: row.querySelector('.ib-k').value, value: row.querySelector('.ib-v').value }); });
+                return { title: app.data.title, summary: document.getElementById('edit-summary').value, infobox: { image: document.getElementById('edit-ib-img').value, rows: ibRows }, blocks: blocks };
             },
 
             addIbRow: function(k='', v='') {
-                const div = document.createElement('div');
-                div.className = 'ib-row';
-                div.style.display = 'flex'; div.style.gap='5px'; div.style.marginBottom='5px';
-                div.innerHTML = `<input class="edit-area" placeholder="項目" value="${k}" style="width:100px"><input class="edit-area" placeholder="内容" value="${v}" style="flex:1"><button onclick="this.parentElement.remove()">×</button>`;
+                const div = document.createElement('div'); div.className = 'ib-row'; div.style = "display:flex; gap:5px; margin-bottom:5px;";
+                div.innerHTML = `<input type="text" class="ib-k edit-area" value="${k}" style="width:40%" placeholder="項目"><input type="text" class="ib-v edit-area" value="${v}" style="width:60%" placeholder="内容"><button class="t-btn" onclick="this.parentElement.remove()">×</button>`;
                 document.getElementById('ib-rows-container').appendChild(div);
             },
 
@@ -767,142 +709,146 @@
                 if(type === 'section') data = { type: 'section', heading: '', content: '', level: 2 };
                 else if(type === 'table') data = { type: 'table', data: [['見出し1','見出し2'],['データ1','データ2']] };
                 else if(type === 'timeline') data = { type: 'timeline', data: [['2023','出来事']] };
+                else if(type === 'image') data = { type: 'image', url: '', markers: [] };
                 else data.url = '';
                 this.renderBlock(data);
             },
 
             renderBlock: function(b) {
-                const div = document.createElement('div');
-                div.className = 'edit-card edit-block-item';
-                div.dataset.type = b.type;
-                div.id = `edit-card-${this.blocksContainer.children.length}`;
-
-                let html = `<div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                                <div style="display:flex; align-items:center;"><i class="fas fa-bars edit-card-handle"></i> <span style="font-weight:bold; color:var(--disney-blue); text-transform:uppercase;">${b.type}</span></div>
-                                <button onclick="this.closest('.edit-card').remove()" style="color:red;">削除</button>
-                            </div>`;
+                const div = document.createElement('div'); div.className = 'edit-card edit-block-item'; div.dataset.type = b.type;
+                let html = `<div style="display:flex; justify-content:space-between; margin-bottom:10px;"><div style="display:flex; align-items:center;"><i class="fas fa-bars edit-card-handle"></i> <span style="font-weight:bold; color:var(--disney-blue); text-transform:uppercase;">${b.type}</span></div><button onclick="this.closest('.edit-card').remove()" style="color:red;">削除</button></div>`;
 
                 if(b.type === 'section') {
-                    html += `<select class="edit-area" style="margin-bottom:5px;">
-                                <option value="2" ${b.level==2?'selected':''}>大見出し (H2)</option>
-                                <option value="3" ${b.level==3?'selected':''}>小見出し (H3)</option>
-                             </select>
-                             <input type="text" class="edit-area heading-input" value="${b.heading||''}" placeholder="見出し" style="font-weight:bold; margin-bottom:5px;">
-                             <textarea class="edit-area content-input" style="height:100px;" onfocus="activeInput=this">${b.content||''}</textarea>`;
+                    html += `<select class="edit-area" style="margin-bottom:5px;"><option value="2" ${b.level==2?'selected':''}>大見出し (H2)</option><option value="3" ${b.level==3?'selected':''}>小見出し (H3)</option></select><input type="text" class="edit-area heading-input" value="${b.heading||''}" placeholder="見出し" style="font-weight:bold; margin-bottom:5px;"><textarea class="edit-area content-input" style="height:100px;" onfocus="activeInput=this">${b.content||''}</textarea>`;
                 } else {
                     html += `<input type="text" class="edit-area media-title-input" value="${b.mediaTitle||''}" placeholder="メディアタイトル (任意)" style="margin-bottom:5px;">`;
-
-                    if(b.type === 'image' || b.type === 'video') {
-                        html += `<input type="text" class="edit-area url-input" value="${b.url||''}" placeholder="画像/動画のURL">`;
-                    }
-                    else if(b.type === 'table') {
-                        html += `<div class="table-editor-area">`;
-                        html += `<table class="editable-table"><tbody>`;
+                    if(b.type === 'image') {
+                        // マーカーデータ保持用の隠しフィールド
+                        const markersJson = JSON.stringify(b.markers || []).replace(/"/g, '&quot;');
+                        html += `<div style="display:flex; gap:5px;"><input type="text" class="edit-area url-input" value="${b.url||''}" placeholder="画像のURL" style="flex:1;"><button class="t-btn" onclick="editor.openMarkerEditor(this)">📍 マーカー編集</button></div><input type="hidden" class="markers-input" value="${markersJson}">`;
+                    } else if(b.type === 'video') {
+                        html += `<input type="text" class="edit-area url-input" value="${b.url||''}" placeholder="動画のURL">`;
+                    } else if(b.type === 'table') {
+                        html += `<div class="table-editor-area"><table class="editable-table"><tbody>`;
                         const safeData = (b.data || [['','']]).map(row => row.map(cell => cell.replace(/"/g, '&quot;')));
-                        safeData.forEach(row => {
-                            html += `<tr>`;
-                            row.forEach(cell => { html += `<td><textarea>${cell}</textarea></td>`; });
-                            html += `<td><button onclick="this.closest('tr').remove()">×</button></td></tr>`;
-                        });
-                        html += `</tbody></table>
-                                 <button class="t-btn" onclick="editor.addTableRow(this)" style="margin-top:5px; width:100%;">+ 行を追加</button>
-                                 <button class="t-btn" onclick="editor.addTableCol(this)" style="margin-top:5px; width:100%;">+ 列を追加</button>
-                                 </div>`;
-                    }
-                    else if(b.type === 'timeline') {
-                        // 【修正】SortableJS用コンテナとドラッグハンドル
+                        safeData.forEach(row => { html += `<tr>`; row.forEach(cell => { html += `<td><textarea>${cell}</textarea></td>`; }); html += `<td><button onclick="this.closest('tr').remove()">×</button></td></tr>`; });
+                        html += `</tbody></table><button class="t-btn" onclick="editor.addTableRow(this)" style="margin-top:5px; width:100%;">+ 行を追加</button><button class="t-btn" onclick="editor.addTableCol(this)" style="margin-top:5px; width:100%;">+ 列を追加</button></div>`;
+                    } else if(b.type === 'timeline') {
                         html += `<div class="timeline-editor-list">`;
                         const safeData = (b.data || [['','']]).map(row => row.map(cell => cell.replace(/"/g, '&quot;')));
-                        safeData.forEach(row => {
-                            html += `<div class="tl-edit-row">
-                                        <i class="fas fa-bars tl-handle"></i> <input class="edit-area tl-y-input" value="${row[0]||''}" placeholder="年/月">
-                                        <input class="edit-area tl-e-input" value="${row[1]||''}" placeholder="出来事">
-                                        <button onclick="this.parentElement.remove()" style="margin-left:5px; color:red;">×</button>
-                                     </div>`;
-                        });
-                        html += `</div>
-                                 <div style="margin-top:5px; display:flex; gap:5px;">
-                                    <button class="t-btn" onclick="editor.addTlRow(this)" style="flex:1;">+ 行を追加</button>
-                                    <button class="t-btn" onclick="editor.sortTimeline(this)" style="flex:1; background:#e0f7fa;">古い順に並び替え</button>
-                                 </div>`;
+                        safeData.forEach(row => { html += `<div class="tl-edit-row"><i class="fas fa-bars tl-handle"></i><input class="edit-area tl-y-input" value="${row[0]||''}" placeholder="年"><input class="edit-area tl-e-input" value="${row[1]||''}" placeholder="出来事"><button onclick="this.parentElement.remove()" style="margin-left:5px; color:red;">×</button></div>`; });
+                        html += `</div><div style="margin-top:5px; display:flex; gap:5px;"><button class="t-btn" onclick="editor.addTlRow(this)" style="flex:1;">+ 行を追加</button><button class="t-btn" onclick="editor.sortTimeline(this)" style="flex:1; background:#e0f7fa;">古い順に並び替え</button></div>`;
                     }
-
                     html += `<textarea class="edit-area media-desc-input" placeholder="説明文 (任意)" style="height:60px; margin-top:5px;">${b.mediaDesc||''}</textarea>`;
                 }
-
                 div.innerHTML = html;
                 this.blocksContainer.appendChild(div);
+                if(b.type === 'timeline') new Sortable(div.querySelector('.timeline-editor-list'), { handle: '.tl-handle', animation: 150 });
+            },
 
-                // タイムラインのドラッグ&ドロップを有効化
-                if (b.type === 'timeline') {
-                    const tlList = div.querySelector('.timeline-editor-list');
-                    if (tlList) {
-                        new Sortable(tlList, { handle: '.tl-handle', animation: 150 });
-                    }
+            // --- マーカー編集機能 ---
+            openMarkerEditor: function(btn) {
+                const blockDiv = btn.closest('.edit-block-item');
+                const url = blockDiv.querySelector('.url-input').value;
+                if(!url) return alert("先に画像URLを入力してください");
+                
+                this.currentEditingImgBlock = blockDiv;
+                const markersInput = blockDiv.querySelector('.markers-input');
+                let markers = [];
+                try { markers = JSON.parse(markersInput.value); } catch(e){}
+
+                const b = document.getElementById('modal-body');
+                let html = `<div style="position:relative; display:inline-block;" id="marker-edit-area"><img src="${url}" style="max-height:80vh; display:block;" onclick="editor.addMarker(event)">`;
+                markers.forEach((m, i) => {
+                    html += `<div class="img-marker m-${m.color}" style="top:${m.y}%; left:${m.x}%;" onclick="editor.removeMarker(event, ${i})"></div>`;
+                });
+                html += `</div><div style="position:absolute; bottom:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); color:white; padding:10px; border-radius:5px;">画像をクリックしてマーカーを追加 / マーカーをクリックして削除<br><button onclick="app.closeModal()">完了</button></div>`;
+                
+                b.innerHTML = html;
+                document.getElementById('media-modal').classList.add('active');
+            },
+
+            addMarker: function(e) {
+                if(e.target.classList.contains('img-marker')) return; // マーカー自体のクリックは無視
+                const img = e.currentTarget;
+                const rect = img.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+                const text = prompt("表示する文字を入力:", "説明");
+                if(text === null) return;
+                const link = prompt("リンク先URLまたはページID:", "");
+                const color = prompt("色を選択 (transparent, black, red, blue, green, yellow):", "red") || "red";
+
+                const markersInput = this.currentEditingImgBlock.querySelector('.markers-input');
+                let markers = JSON.parse(markersInput.value);
+                markers.push({ x, y, text, link, color });
+                markersInput.value = JSON.stringify(markers);
+                
+                // 再描画
+                this.currentEditingImgBlock.querySelector('button[onclick*="openMarkerEditor"]').click();
+            },
+
+            removeMarker: function(e, index) {
+                e.stopPropagation();
+                if(!confirm("このマーカーを削除しますか？")) return;
+                const markersInput = this.currentEditingImgBlock.querySelector('.markers-input');
+                let markers = JSON.parse(markersInput.value);
+                markers.splice(index, 1);
+                markersInput.value = JSON.stringify(markers);
+                this.currentEditingImgBlock.querySelector('button[onclick*="openMarkerEditor"]').click();
+            },
+
+            // --- 自動リンク機能 ---
+            autoLink: async function() {
+                if(!confirm("Wiki内の全てのページを探して、自動的にリンクを貼りますか？\n（既にリンクになっている箇所はスキップされます）")) return;
+                
+                const snap = await getDocs(query(collection(db, "pages")));
+                const pageIds = [];
+                snap.forEach(d => pageIds.push(d.id));
+                // 長いタイトルから順に置換することで部分一致ミスを防ぐ
+                pageIds.sort((a, b) => b.length - a.length);
+
+                const textareas = document.querySelectorAll('.edit-area');
+                let count = 0;
+
+                textareas.forEach(ta => {
+                    let text = ta.value;
+                    pageIds.forEach(id => {
+                        // 既に [[id]] になっているものは除外する正規表現
+                        // 単純化のため、[[ ]] で囲まれていない id を置換
+                        const regex = new RegExp(`(?<!\\[\\[)(${id})(?!\\]\\])`, 'g');
+                        if(text.match(regex)) {
+                            text = text.replace(regex, '[[$1]]');
+                            count++;
+                        }
+                    });
+                    ta.value = text;
+                });
+                alert(`${count} 箇所のリンクを作成しました！`);
+            },
+
+            // --- Helper Functions ---
+            apply: function(start, end) {
+                const el = activeInput; 
+                if (el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')) {
+                    const s = el.selectionStart; const e = el.selectionEnd; const v = el.value;
+                    el.value = v.substring(0, s) + start + v.substring(s, e) + end + v.substring(e);
+                    el.focus();
                 }
             },
-
-            apply: function(start, end) {
-                if(!activeInput) return;
-                const s = activeInput.selectionStart;
-                const e = activeInput.selectionEnd;
-                const v = activeInput.value;
-                activeInput.value = v.substring(0, s) + start + v.substring(s, e) + end + v.substring(e);
-                activeInput.focus();
-            },
-
             applyLink: function(type) {
                 if(!activeInput) return;
-                const url = prompt(type==='internal' ? "ページIDを入力:" : "URLを入力:");
+                const url = prompt(type==='internal' ? "ページID:" : "URL:");
                 if(!url) return;
-                const tag = type==='internal' ? `[[${url}]]` : `[${url} リンク]`;
-                this.apply(tag, '');
+                this.apply(type==='internal' ? `[[${url}]]` : `[${url} リンク]`, '');
             },
-
-            addTableRow: function(btn) {
-                const tbody = btn.previousElementSibling.querySelector('tbody');
-                const colCount = tbody.rows[0]?.cells.length - 1 || 2; 
-                const tr = document.createElement('tr');
-                let html = '';
-                for(let i=0; i<colCount; i++) html += `<td><textarea></textarea></td>`;
-                html += `<td><button onclick="this.closest('tr').remove()">×</button></td>`;
-                tr.innerHTML = html;
-                tbody.appendChild(tr);
-            },
-
-            addTableCol: function(btn) {
-                const table = btn.parentElement.querySelector('table');
-                for(let i=0; i<table.rows.length; i++) {
-                    const tr = table.rows[i];
-                    const td = document.createElement('td');
-                    td.innerHTML = '<textarea></textarea>';
-                    tr.insertBefore(td, tr.lastElementChild);
-                }
-            },
-
-            addTlRow: function(btn) {
-                const div = document.createElement('div');
-                div.className = 'tl-edit-row';
-                div.innerHTML = `<i class="fas fa-bars tl-handle"></i>
-                                 <input class="edit-area tl-y-input" placeholder="年/月">
-                                 <input class="edit-area tl-e-input" placeholder="出来事">
-                                 <button onclick="this.parentElement.remove()" style="margin-left:5px; color:red;">×</button>`;
-                // .timeline-editor-list に追加
-                btn.parentElement.previousElementSibling.appendChild(div);
-            },
-
-            sortTimeline: function(btn) {
-                const area = btn.parentElement.previousElementSibling;
-                const rows = Array.from(area.querySelectorAll('.tl-edit-row'));
-                rows.sort((a, b) => {
-                    const valA = a.querySelector('.tl-y-input').value;
-                    const valB = b.querySelector('.tl-y-input').value;
-                    return valA.localeCompare(valB, undefined, {numeric: true, sensitivity: 'base'});
-                });
-                rows.forEach(r => area.appendChild(r));
-            }
+            addTableRow: function(btn) { const tbody = btn.previousElementSibling.querySelector('tbody'); const col = tbody.rows[0]?.cells.length-1||2; const tr = document.createElement('tr'); let h=''; for(let i=0;i<col;i++) h+='<td><textarea></textarea></td>'; h+='<td><button onclick="this.closest(\'tr\').remove()">×</button></td>'; tr.innerHTML=h; tbody.appendChild(tr); },
+            addTableCol: function(btn) { const t = btn.parentElement.querySelector('table'); for(let i=0;i<t.rows.length;i++){ const td=document.createElement('td'); td.innerHTML='<textarea></textarea>'; t.rows[i].insertBefore(td, t.rows[i].lastElementChild); } },
+            addTlRow: function(btn) { const d=document.createElement('div'); d.className='tl-edit-row'; d.innerHTML=`<i class="fas fa-bars tl-handle"></i><input class="edit-area tl-y-input" placeholder="年"><input class="edit-area tl-e-input" placeholder="出来事"><button onclick="this.parentElement.remove()" style="margin-left:5px; color:red;">×</button>`; btn.parentElement.previousElementSibling.appendChild(d); },
+            sortTimeline: function(btn) { const a = btn.parentElement.previousElementSibling; const rows = Array.from(a.querySelectorAll('.tl-edit-row')); rows.sort((x, y) => x.querySelector('.tl-y-input').value.localeCompare(y.querySelector('.tl-y-input').value, undefined, {numeric:true})); rows.forEach(r => a.appendChild(r)); }
         };
-        
+
         app.init();
     </script>
 </body>
