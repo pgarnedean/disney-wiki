@@ -120,21 +120,27 @@
         .wiki-table th, .wiki-table td { border: 1px solid #ccc; padding: 8px; text-align: left; }
         .wiki-table th { background: #f0f0f0; font-weight: bold; text-align: center; }
 
-        /* モーダル（動画・画像共通） */
+        /* モーダル */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85);
             z-index: 99999; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s;
         }
         .modal.active { opacity: 1; pointer-events: auto; }
-        .modal-content { position: relative; width: 80%; max-width: 900px; max-height: 90vh; background: black; box-shadow: 0 0 20px white; display:flex; justify-content:center; align-items:center; }
-        .modal-close { position: absolute; top: -40px; right: 0; color: white; font-size: 30px; cursor: pointer; }
+        .modal-content { position: relative; width: 90%; height: 90%; max-width: 1000px; background: black; box-shadow: 0 0 20px white; display:flex; justify-content:center; align-items:center; border-radius: 8px; overflow: hidden; }
+        .modal-close { position: absolute; top: 10px; right: 20px; color: white; font-size: 40px; cursor: pointer; z-index: 1000; text-shadow: 0 0 5px black; }
         
-        /* 画像マーカー */
-        .img-marker-container { position: relative; display: inline-block; max-width: 100%; max-height: 80vh; }
-        .img-marker-container img { max-width: 100%; max-height: 80vh; display: block; }
+        /* 画像・PDFマーカーコンテナ */
+        .img-marker-container { position: relative; width: 100%; height: 100%; overflow: auto; display: flex; justify-content: center; align-items: center; background: #333; }
+        .img-marker-container img, .img-marker-container iframe, .img-marker-container embed, .img-marker-container object { 
+            max-width: none; /* 拡大のため制限解除 */
+            display: block; 
+        }
+        /* iframe/embedをレスポンシブに */
+        .pdf-viewer { width: 100%; height: 100%; border: none; }
+
         .img-marker {
             position: absolute; width: 24px; height: 24px; transform: translate(-50%, -50%);
-            border-radius: 50%; cursor: pointer; z-index: 10;
+            border-radius: 50%; cursor: pointer; z-index: 100;
             box-shadow: 0 0 5px rgba(255,255,255,0.8);
             border: 2px solid white;
         }
@@ -145,13 +151,18 @@
         }
         .img-marker:hover::after { opacity: 1; }
         
-        /* マーカー色定義 */
         .m-transparent { background: rgba(255,255,255,0.2); border: 2px dashed rgba(255,255,255,0.8); }
         .m-black { background: black; }
         .m-red { background: #ff3b30; }
         .m-blue { background: #007aff; }
         .m-green { background: #34c759; }
         .m-yellow { background: #ffcc00; }
+
+        /* リンクスタイル修正 */
+        a.wiki-link { color: #0645ad; font-weight: bold; text-decoration: none; border-bottom: 1px dotted #0645ad; }
+        a.wiki-link:hover { text-decoration: underline; background: #e6f2ff; }
+        a.ext-link { color: #3366bb; text-decoration: none; }
+        a.ext-link:hover { text-decoration: underline; }
 
         .toc-list { list-style: none; padding: 0; font-size: 14px; }
         .toc-link { color: #0645ad; text-decoration: none; cursor: pointer; display: block; padding: 3px 0; }
@@ -170,6 +181,10 @@
         .edit-area { width: 100%; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; font-family: serif; line-height: 1.5; font-size: 16px; }
         .edit-card-handle { cursor: grab; color: #ccc; margin-right: 10px; font-size: 20px; }
         
+        /* リンクプレビュー */
+        .link-preview { margin-top: 5px; max-width: 150px; max-height: 100px; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; cursor: pointer; }
+        .link-preview img, .link-preview video, .link-preview iframe { width: 100%; height: 100%; object-fit: cover; }
+
         .editable-table { width: 100%; border-collapse: collapse; background: white; margin-top: 10px; }
         .editable-table td { border: 1px solid #ccc; padding: 0; }
         .editable-table textarea { width: 100%; border: none; padding: 8px; box-sizing: border-box; outline: none; resize: vertical; min-height: 50px; font-family: inherit; }
@@ -208,8 +223,8 @@
 
     <div id="media-modal" class="modal" onclick="app.closeModal()">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <div class="modal-close" onclick="app.closeModal()">× 閉じる</div>
-            <div id="modal-body" style="width:100%; height:100%; display:flex; justify-content:center; align-items:center;"></div>
+            <div class="modal-close" onclick="app.closeModal()">×</div>
+            <div id="modal-body" style="width:100%; height:100%;"></div>
         </div>
     </div>
 
@@ -250,7 +265,8 @@
                     <button class="t-btn" onmousedown="event.preventDefault(); editor.applyLink('external')"><i class="fas fa-external-link-alt"></i></button>
                     <button class="t-btn" onclick="editor.autoLink()" style="color:var(--disney-blue);"><i class="fas fa-magic"></i> 自動リンク</button>
                     <div style="width:1px; background:#ccc; height:20px; margin:0 5px;"></div>
-                    <button class="t-btn" onclick="editor.addBlock('image')"><i class="fas fa-image"></i> 画像</button>
+                    <button class="t-btn" onclick="editor.addBlock('image')"><i class="fas fa-image"></i> 画像/GIF</button>
+                    <button class="t-btn" onclick="editor.addBlock('pdf')"><i class="fas fa-file-pdf"></i> PDF</button>
                     <button class="t-btn" onclick="editor.addBlock('video')"><i class="fas fa-video"></i> 動画</button>
                     <button class="t-btn" onclick="editor.addBlock('table')"><i class="fas fa-table"></i> 表</button>
                     <button class="t-btn" onclick="editor.addBlock('timeline')"><i class="fas fa-history"></i> 時系列</button>
@@ -269,7 +285,8 @@
                             </div>
                             <div style="width:300px; flex-shrink: 0;">
                                 <label style="display:block; margin-bottom:5px; font-weight:bold;">ボックス画像URL:</label>
-                                <input type="text" id="edit-ib-img" class="edit-area">
+                                <input type="text" id="edit-ib-img" class="edit-area" oninput="editor.updatePreview(this)">
+                                <div class="link-preview"></div>
                                 <label style="display:block; margin:10px 0 5px; font-weight:bold;">項目（キー:値）:</label>
                                 <div id="ib-rows-container"></div>
                                 <button class="t-btn" onclick="editor.addIbRow()" style="width:100%; margin-top:5px;">+ 項目追加</button>
@@ -518,10 +535,15 @@
                         m.className = 'media-box';
                         if(b.mediaTitle) m.innerHTML += `<div class="media-title">${b.mediaTitle}</div>`;
 
-                        if(b.type === 'image') {
-                            // 画像クリックでモーダル表示
+                        if(b.type === 'image' || b.type === 'pdf') {
+                            // 画像・PDF・GIFクリックでモーダル表示
                             const markersJson = b.markers ? JSON.stringify(b.markers).replace(/"/g, '&quot;') : '[]';
-                            m.innerHTML += `<div onclick='app.openImageModal("${b.url}", ${markersJson})'><img src="${b.url}" style="width:100%;"></div>`;
+                            // PDFならPDFビューア、それ以外は画像タグ
+                            const contentTag = (b.type === 'pdf') 
+                                ? `<div class="pdf-icon" style="font-size:50px; color:red;"><i class="fas fa-file-pdf"></i></div><div style="font-size:0.8em; margin-top:5px;">クリックして拡大</div>`
+                                : `<img src="${b.url}" style="width:100%;">`;
+                            
+                            m.innerHTML += `<div onclick='app.openMediaModal("${b.type}", "${b.url}", ${markersJson})'>${contentTag}</div>`;
                         } else if(b.type === 'video') {
                             const ytId = this.getYoutubeId(b.url);
                             if(ytId) {
@@ -553,8 +575,8 @@
                     .replace(/\*(.*?)\*/g, '<i>$1</i>') // 斜体
                     .replace(/~~(.*?)~~/g, '<s>$1</s>') // 取消線
                     .replace(/<u>(.*?)<\/u>/g, '<u>$1</u>') // 下線
-                    .replace(/\[\[(.*?)\]\]/g, '<a href="#$1" style="color:#0645ad; font-weight:bold;">$1</a>') // Wikiリンク
-                    .replace(/\[(https?:\/\/[^\s]+)\s+(.*?)\]/g, '<a href="$1" target="_blank" style="color:#36b;">$2 <i class="fas fa-external-link-alt" style="font-size:0.8em"></i></a>') // 外部リンク [url text]
+                    .replace(/\[\[(.*?)\]\]/g, '<a href="#$1" class="wiki-link">$1</a>') // Wikiリンク
+                    .replace(/\[(https?:\/\/[^\s]+)\s+(.*?)\]/g, '<a href="$1" target="_blank" class="ext-link">$2 <i class="fas fa-external-link-alt" style="font-size:0.8em"></i></a>') // 外部リンク [url text]
                     .replace(/\n/g, '<br>'); // 改行
                 return html;
             },
@@ -566,11 +588,17 @@
                 document.getElementById('media-modal').classList.add('active');
             },
             
-            openImageModal: function(url, markers=[]) {
+            openMediaModal: function(type, url, markers=[]) {
                 const b = document.getElementById('modal-body');
-                let html = `<div class="img-marker-container"><img src="${url}">`;
+                let contentHtml = '';
+                if(type === 'pdf') {
+                    contentHtml = `<iframe src="${url}" class="pdf-viewer"></iframe>`;
+                } else {
+                    contentHtml = `<img src="${url}">`;
+                }
+
+                let html = `<div class="img-marker-container" style="width:100%; height:100%;">${contentHtml}`;
                 markers.forEach(m => {
-                    // マーカークリック時の動作：リンクがあれば飛ぶ
                     const clickAction = m.link ? (m.link.startsWith('http') ? `window.open('${m.link}')` : `location.hash='${m.link}'; app.closeModal();`) : '';
                     html += `<div class="img-marker m-${m.color}" style="top:${m.y}%; left:${m.x}%;" data-text="${m.text}" onclick="${clickAction}"></div>`;
                 });
@@ -678,9 +706,9 @@
                         blockData.level = el.querySelector('select').value;
                         blockData.heading = el.querySelector('.heading-input').value;
                         blockData.content = el.querySelector('.content-input').value;
-                    } else if(type === 'image') {
+                    } else if(type === 'image' || type === 'pdf') {
                         blockData.url = el.querySelector('.url-input').value;
-                        // マーカーデータの収集（隠しフィールドから）
+                        // マーカーデータ収集
                         const markersJson = el.querySelector('.markers-input').value;
                         try { blockData.markers = JSON.parse(markersJson); } catch(e) { blockData.markers = []; }
                     } else if(type === 'video') {
@@ -709,7 +737,7 @@
                 if(type === 'section') data = { type: 'section', heading: '', content: '', level: 2 };
                 else if(type === 'table') data = { type: 'table', data: [['見出し1','見出し2'],['データ1','データ2']] };
                 else if(type === 'timeline') data = { type: 'timeline', data: [['2023','出来事']] };
-                else if(type === 'image') data = { type: 'image', url: '', markers: [] };
+                else if(type === 'image' || type === 'pdf') data = { type: type, url: '', markers: [] };
                 else data.url = '';
                 this.renderBlock(data);
             },
@@ -722,12 +750,17 @@
                     html += `<select class="edit-area" style="margin-bottom:5px;"><option value="2" ${b.level==2?'selected':''}>大見出し (H2)</option><option value="3" ${b.level==3?'selected':''}>小見出し (H3)</option></select><input type="text" class="edit-area heading-input" value="${b.heading||''}" placeholder="見出し" style="font-weight:bold; margin-bottom:5px;"><textarea class="edit-area content-input" style="height:100px;" onfocus="activeInput=this">${b.content||''}</textarea>`;
                 } else {
                     html += `<input type="text" class="edit-area media-title-input" value="${b.mediaTitle||''}" placeholder="メディアタイトル (任意)" style="margin-bottom:5px;">`;
-                    if(b.type === 'image') {
-                        // マーカーデータ保持用の隠しフィールド
+                    if(b.type === 'image' || b.type === 'pdf') {
                         const markersJson = JSON.stringify(b.markers || []).replace(/"/g, '&quot;');
-                        html += `<div style="display:flex; gap:5px;"><input type="text" class="edit-area url-input" value="${b.url||''}" placeholder="画像のURL" style="flex:1;"><button class="t-btn" onclick="editor.openMarkerEditor(this)">📍 マーカー編集</button></div><input type="hidden" class="markers-input" value="${markersJson}">`;
+                        html += `<div style="display:flex; gap:5px; flex-direction:column;">
+                                    <div style="display:flex; gap:5px;">
+                                        <input type="text" class="edit-area url-input" value="${b.url||''}" placeholder="${b.type==='pdf'?'PDF':'画像/GIF'}のURL" style="flex:1;" oninput="editor.updatePreview(this)">
+                                        <button class="t-btn" onclick="editor.openMarkerEditor(this)">📍 マーカー編集</button>
+                                    </div>
+                                    <div class="link-preview"></div>
+                                 </div><input type="hidden" class="markers-input" value="${markersJson}">`;
                     } else if(b.type === 'video') {
-                        html += `<input type="text" class="edit-area url-input" value="${b.url||''}" placeholder="動画のURL">`;
+                        html += `<input type="text" class="edit-area url-input" value="${b.url||''}" placeholder="動画のURL" oninput="editor.updatePreview(this)"><div class="link-preview"></div>`;
                     } else if(b.type === 'table') {
                         html += `<div class="table-editor-area"><table class="editable-table"><tbody>`;
                         const safeData = (b.data || [['','']]).map(row => row.map(cell => cell.replace(/"/g, '&quot;')));
@@ -743,14 +776,44 @@
                 }
                 div.innerHTML = html;
                 this.blocksContainer.appendChild(div);
+                
+                // 初期プレビュー表示
+                if(b.type === 'image' || b.type === 'pdf' || b.type === 'video') {
+                    const input = div.querySelector('.url-input');
+                    if(input && input.value) editor.updatePreview(input);
+                }
                 if(b.type === 'timeline') new Sortable(div.querySelector('.timeline-editor-list'), { handle: '.tl-handle', animation: 150 });
+            },
+
+            // --- リンクプレビュー機能 ---
+            updatePreview: function(input) {
+                const container = input.parentElement.querySelector('.link-preview') || input.parentElement.parentElement.querySelector('.link-preview');
+                if(!container) return;
+                const url = input.value;
+                if(!url) { container.innerHTML = ''; return; }
+                
+                // 拡張子などから簡易判定
+                if(url.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
+                    container.innerHTML = `<img src="${url}">`;
+                } else if(url.match(/\.(mp4|webm)$/i)) {
+                    container.innerHTML = `<video src="${url}"></video>`;
+                } else if(url.match(/\.pdf$/i)) {
+                    container.innerHTML = `<div style="text-align:center; padding:10px; font-size:30px; color:red;"><i class="fas fa-file-pdf"></i></div>`;
+                } else if(url.includes('youtube.com') || url.includes('youtu.be')) {
+                    const id = app.getYoutubeId(url);
+                    if(id) container.innerHTML = `<img src="https://img.youtube.com/vi/${id}/hqdefault.jpg">`;
+                } else {
+                    // 不明な場合はアイコン
+                    container.innerHTML = `<div style="text-align:center; padding:10px; font-size:30px; color:#ccc;"><i class="fas fa-image"></i></div>`;
+                }
             },
 
             // --- マーカー編集機能 ---
             openMarkerEditor: function(btn) {
                 const blockDiv = btn.closest('.edit-block-item');
+                const type = blockDiv.dataset.type;
                 const url = blockDiv.querySelector('.url-input').value;
-                if(!url) return alert("先に画像URLを入力してください");
+                if(!url) return alert("先にURLを入力してください");
                 
                 this.currentEditingImgBlock = blockDiv;
                 const markersInput = blockDiv.querySelector('.markers-input');
@@ -758,77 +821,85 @@
                 try { markers = JSON.parse(markersInput.value); } catch(e){}
 
                 const b = document.getElementById('modal-body');
-                let html = `<div style="position:relative; display:inline-block;" id="marker-edit-area"><img src="${url}" style="max-height:80vh; display:block;" onclick="editor.addMarker(event)">`;
+                let mediaHtml = type === 'pdf' ? `<iframe src="${url}" class="pdf-viewer"></iframe>` : `<img src="${url}" style="max-height:80vh; display:block;">`;
+                
+                let html = `<div style="position:relative; display:inline-block; width:100%; height:100%;" id="marker-edit-area" onclick="editor.onAreaClick(event)">${mediaHtml}`;
+                // PDFの場合はiframeの上に透明なカバーを置いてクリックを検知させる簡易実装
+                if(type==='pdf') html += `<div style="position:absolute; top:0; left:0; width:100%; height:100%; cursor:crosshair;"></div>`;
+
                 markers.forEach((m, i) => {
-                    html += `<div class="img-marker m-${m.color}" style="top:${m.y}%; left:${m.x}%;" onclick="editor.removeMarker(event, ${i})"></div>`;
+                    html += `<div class="img-marker m-${m.color}" style="top:${m.y}%; left:${m.x}%;" onclick="editor.editExistingMarker(event, ${i})"></div>`;
                 });
-                html += `</div><div style="position:absolute; bottom:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); color:white; padding:10px; border-radius:5px;">画像をクリックしてマーカーを追加 / マーカーをクリックして削除<br><button onclick="app.closeModal()">完了</button></div>`;
+                html += `</div><div style="position:absolute; bottom:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); color:white; padding:10px; border-radius:5px; pointer-events:none;">クリックで追加 / マーカークリックで編集・削除</div>`;
                 
                 b.innerHTML = html;
                 document.getElementById('media-modal').classList.add('active');
             },
 
-            addMarker: function(e) {
-                if(e.target.classList.contains('img-marker')) return; // マーカー自体のクリックは無視
-                const img = e.currentTarget;
-                const rect = img.getBoundingClientRect();
+            onAreaClick: function(e) {
+                if(e.target.classList.contains('img-marker')) return; 
+                const rect = e.currentTarget.getBoundingClientRect();
                 const x = ((e.clientX - rect.left) / rect.width) * 100;
                 const y = ((e.clientY - rect.top) / rect.height) * 100;
+                this.addMarker(x, y);
+            },
 
-                const text = prompt("表示する文字を入力:", "説明");
+            addMarker: function(x, y) {
+                const text = prompt("表示する文字:", "説明");
                 if(text === null) return;
-                const link = prompt("リンク先URLまたはページID:", "");
-                const color = prompt("色を選択 (transparent, black, red, blue, green, yellow):", "red") || "red";
+                const link = prompt("リンク先 (WikiページID または URL):", "");
+                const color = prompt("色 (transparent, black, red, blue, green, yellow):", "red") || "red";
 
                 const markersInput = this.currentEditingImgBlock.querySelector('.markers-input');
                 let markers = JSON.parse(markersInput.value);
                 markers.push({ x, y, text, link, color });
                 markersInput.value = JSON.stringify(markers);
                 
-                // 再描画
+                // 再描画（モーダルを閉じて開き直す簡易実装）
+                app.closeModal();
                 this.currentEditingImgBlock.querySelector('button[onclick*="openMarkerEditor"]').click();
             },
 
-            removeMarker: function(e, index) {
+            editExistingMarker: function(e, index) {
                 e.stopPropagation();
-                if(!confirm("このマーカーを削除しますか？")) return;
                 const markersInput = this.currentEditingImgBlock.querySelector('.markers-input');
                 let markers = JSON.parse(markersInput.value);
-                markers.splice(index, 1);
+                const m = markers[index];
+
+                if(confirm("このマーカーを削除しますか？\n（キャンセルで編集）")) {
+                    markers.splice(index, 1);
+                } else {
+                    m.text = prompt("文字:", m.text) || m.text;
+                    m.link = prompt("リンク:", m.link) || m.link;
+                    m.color = prompt("色:", m.color) || m.color;
+                }
                 markersInput.value = JSON.stringify(markers);
+                app.closeModal();
                 this.currentEditingImgBlock.querySelector('button[onclick*="openMarkerEditor"]').click();
             },
 
             // --- 自動リンク機能 ---
             autoLink: async function() {
-                if(!confirm("Wiki内の全てのページを探して、自動的にリンクを貼りますか？\n（既にリンクになっている箇所はスキップされます）")) return;
-                
+                if(!confirm("Wiki内の全てのページを探して、自動的にリンクを貼りますか？")) return;
                 const snap = await getDocs(query(collection(db, "pages")));
                 const pageIds = [];
                 snap.forEach(d => pageIds.push(d.id));
-                // 長いタイトルから順に置換することで部分一致ミスを防ぐ
                 pageIds.sort((a, b) => b.length - a.length);
 
                 const textareas = document.querySelectorAll('.edit-area');
                 let count = 0;
-
                 textareas.forEach(ta => {
                     let text = ta.value;
                     pageIds.forEach(id => {
-                        // 既に [[id]] になっているものは除外する正規表現
-                        // 単純化のため、[[ ]] で囲まれていない id を置換
                         const regex = new RegExp(`(?<!\\[\\[)(${id})(?!\\]\\])`, 'g');
-                        if(text.match(regex)) {
-                            text = text.replace(regex, '[[$1]]');
-                            count++;
-                        }
+                        if(text.match(regex)) { text = text.replace(regex, '[[$1]]'); count++; }
                     });
                     ta.value = text;
                 });
                 alert(`${count} 箇所のリンクを作成しました！`);
             },
 
-            // --- Helper Functions ---
+            // --- Helper ---
             apply: function(start, end) {
                 const el = activeInput; 
                 if (el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')) {
