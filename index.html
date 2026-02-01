@@ -59,12 +59,12 @@
             100% { transform: scale(0) rotate(90deg); opacity: 0; }
         }
 
-        /* ミッキーアニメーション（修正版：結合シルエット） */
+        /* ミッキーアニメーション */
         .hidden-mickey {
             position: absolute;
             width: 180px; height: 180px;
             transition: transform 3s ease-in-out;
-            opacity: 0.8; /* 少し透明 */
+            opacity: 0.8;
             filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.2));
         }
         .mickey-left { left: -200px; top: 50%; }
@@ -138,17 +138,19 @@
         .toc-link { color: #0645ad; text-decoration: none; cursor: pointer; display: block; padding: 3px 0; }
         .toc-link:hover { text-decoration: underline; }
 
+        /* 編集バーのデザイン（修正：1列・折り返しなし） */
         .editor-toolbar {
             background: #f8f9fa; border: 1px solid #ccc; padding: 8px;
-            display: flex; gap: 5px; position: sticky; top: 60px; z-index: 1000; margin-bottom: 20px; flex-wrap: wrap;
+            display: flex; gap: 5px; position: sticky; top: 60px; z-index: 1000; margin-bottom: 20px;
+            flex-wrap: nowrap; /* 1列に強制 */
+            align-items: center;
+            overflow-x: auto; /* 幅が足りない場合は横スクロール */
+            white-space: nowrap;
         }
-        .t-btn { background: white; border: 1px solid #ccc; padding: 5px 10px; cursor: pointer; border-radius: 3px; font-family: sans-serif; }
+        .t-btn { background: white; border: 1px solid #ccc; padding: 5px 10px; cursor: pointer; border-radius: 3px; font-family: sans-serif; white-space: nowrap; }
         .t-btn:hover { background: #eee; }
         
-        .edit-card { 
-            border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; background: #fffdf5; 
-            border-radius: 8px; position: relative;
-        }
+        .edit-card { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; background: #fffdf5; border-radius: 8px; position: relative; }
         .edit-area { width: 100%; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; font-family: serif; line-height: 1.5; font-size: 16px; }
         .edit-card-handle { cursor: grab; color: #ccc; margin-right: 10px; font-size: 20px; }
         
@@ -156,7 +158,9 @@
         .editable-table td { border: 1px solid #ccc; padding: 0; }
         .editable-table textarea { width: 100%; border: none; padding: 8px; box-sizing: border-box; outline: none; resize: vertical; min-height: 50px; font-family: inherit; }
 
-        .tl-edit-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: flex-start; }
+        /* タイムライン編集行（ドラッグ対応） */
+        .tl-edit-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; background: #fff; padding: 5px; border: 1px solid #eee; border-radius: 4px; }
+        .tl-handle { cursor: grab; color: #aaa; padding: 0 5px; font-size: 14px; }
         .tl-y-input { width: 80px !important; }
         .tl-e-input { flex: 1 !important; }
 
@@ -169,34 +173,17 @@
         .btn-royal { background: var(--disney-blue); color: white; border: none; padding: 10px 25px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .hidden { display: none !important; }
 
-        /* カスタムボタンデザイン（画像参考） */
+        /* 保存・戻るボタン */
         .btn-magic-save {
-            background-color: #c5a059; /* ゴールド */
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
+            background-color: #c5a059; color: white; border: none; padding: 8px 18px; border-radius: 6px;
+            font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+        }
+        .btn-magic-back {
+            background-color: #ccc; color: white; border: none; padding: 8px 18px; border-radius: 6px;
+            font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); white-space: nowrap;
         }
         .btn-magic-save:hover { background-color: #b08d4b; }
-        
-        .btn-magic-back {
-            background-color: #ccc; /* グレー */
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
         .btn-magic-back:hover { background-color: #bbb; }
 
     </style>
@@ -242,20 +229,17 @@
 
             <div id="edit-mode" class="hidden">
                 <div id="editor-toolbar-box" class="editor-toolbar">
-                    <button class="t-btn" onmousedown="event.preventDefault(); editor.apply('**','**')"><b>B 太字</b></button>
-                    <button class="t-btn" onmousedown="event.preventDefault(); editor.apply('*','*')"><i>I 斜体</i></button>
-                    <button class="t-btn" onmousedown="event.preventDefault(); editor.apply('<u>','</u>')"><u>U 下線</u></button>
-                    <button class="t-btn" onmousedown="event.preventDefault(); editor.apply('~~','~~')"><s>S 取消</s></button>
-                    <div style="width:1px; background:#ccc; margin:0 5px;"></div>
-                    <button class="t-btn" onmousedown="event.preventDefault(); editor.applyLink('internal')"><i class="fas fa-link"></i> Wiki内</button>
-                    <button class="t-btn" onmousedown="event.preventDefault(); editor.applyLink('external')"><i class="fas fa-external-link-alt"></i> 外部</button>
-                    <div style="width:1px; background:#ccc; margin:0 5px;"></div>
-                    <button class="t-btn" onclick="editor.addBlock('image')"><i class="fas fa-image"></i> 画像/GIF</button>
+                    <button class="t-btn" onmousedown="event.preventDefault(); editor.apply('**','**')"><b>B</b></button>
+                    <button class="t-btn" onmousedown="event.preventDefault(); editor.apply('*','*')"><i>I</i></button>
+                    <button class="t-btn" onmousedown="event.preventDefault(); editor.apply('<u>','</u>')"><u>U</u></button>
+                    <button class="t-btn" onmousedown="event.preventDefault(); editor.applyLink('internal')"><i class="fas fa-link"></i></button>
+                    <button class="t-btn" onmousedown="event.preventDefault(); editor.applyLink('external')"><i class="fas fa-external-link-alt"></i></button>
+                    <div style="width:1px; background:#ccc; height:20px; margin:0 5px;"></div>
+                    <button class="t-btn" onclick="editor.addBlock('image')"><i class="fas fa-image"></i> 画像</button>
                     <button class="t-btn" onclick="editor.addBlock('video')"><i class="fas fa-video"></i> 動画</button>
                     <button class="t-btn" onclick="editor.addBlock('table')"><i class="fas fa-table"></i> 表</button>
                     <button class="t-btn" onclick="editor.addBlock('timeline')"><i class="fas fa-history"></i> 時系列</button>
-                    <div style="flex-grow:1"></div>
-                    <button id="save-btn-main" class="btn-magic-save" onclick="app.savePage()">✨ 魔法を保存</button>
+                    <div style="flex-grow:1; min-width:20px;"></div> <button id="save-btn-main" class="btn-magic-save" onclick="app.savePage()">✨ 魔法を保存</button>
                     <button class="btn-magic-back" onclick="app.toggleEdit()">戻る</button>
                 </div>
 
@@ -264,7 +248,7 @@
                         <h4 style="margin:0 0 10px 0; color:var(--disney-blue);">✨ ページ概要とインフォボックス</h4>
                         <div style="display:flex; gap:15px; flex-wrap: wrap;">
                             <div style="flex:1; min-width: 300px;">
-                                <label style="display:block; margin-bottom:5px; font-weight:bold;">ざっくり説明（左側に固定）:</label>
+                                <label style="display:block; margin-bottom:5px; font-weight:bold;">ざっくり説明:</label>
                                 <textarea id="edit-summary" class="edit-area" style="height:150px;"></textarea>
                             </div>
                             <div style="width:300px; flex-shrink: 0;">
@@ -321,55 +305,37 @@
         function initEffects() {
             const container = document.getElementById('effects-canvas');
             
-            // 1. キラキラ (変更なし)
+            // 1. キラキラ
             setInterval(() => {
                 const star = document.createElement('div');
                 star.className = 'sparkle-cross';
                 const isLeft = Math.random() > 0.5;
                 const leftPos = isLeft ? Math.random() * 10 : 90 + Math.random() * 10;
                 const size = 15 + Math.random() * 25; 
-                star.style.left = leftPos + '%';
-                star.style.top = (Math.random() * 100) + '%';
-                star.style.width = size + 'px';
-                star.style.height = size + 'px';
+                star.style.left = leftPos + '%'; star.style.top = (Math.random() * 100) + '%';
+                star.style.width = size + 'px'; star.style.height = size + 'px';
                 container.appendChild(star);
                 setTimeout(() => star.remove(), 2500);
             }, 300);
 
-            // 2. 隠れミッキー（修正：画像を忠実に再現、結合シルエット）
+            // 2. 隠れミッキー
             const spawnMickey = () => {
                 const colors = ['#000000', '#FF0000', '#0000FF', '#FFFF00', '#008000', '#800080', '#00BFFF'];
                 const color = colors[Math.floor(Math.random() * colors.length)];
-                
                 const div = document.createElement('div');
                 div.className = 'hidden-mickey';
-                
-                // 座標計算に基づき、耳と顔が重なるように調整
-                // 顔: cx=50, cy=55, r=28
-                // 耳: cx=20, cy=20, r=20
-                div.innerHTML = `
-                <svg viewBox="0 0 100 100" style="width:100%; height:100%;">
-                    <circle cx="20" cy="20" r="20" fill="${color}" />
-                    <circle cx="80" cy="20" r="20" fill="${color}" />
-                    <circle cx="50" cy="55" r="28" fill="${color}" />
-                </svg>`;
-
+                div.innerHTML = `<svg viewBox="0 0 100 100" style="width:100%; height:100%;"><circle cx="20" cy="20" r="20" fill="${color}" /><circle cx="80" cy="20" r="20" fill="${color}" /><circle cx="50" cy="55" r="28" fill="${color}" /></svg>`;
                 const isLeft = Math.random() > 0.5;
                 div.classList.add(isLeft ? 'mickey-left' : 'mickey-right');
                 div.style.top = (10 + Math.random() * 70) + '%';
                 container.appendChild(div);
-
-                setTimeout(() => { div.classList.add('show'); }, 100);
-                setTimeout(() => { div.classList.remove('show'); }, 10000); 
-                setTimeout(() => { div.remove(); }, 14000); 
+                setTimeout(() => div.classList.add('show'), 100);
+                setTimeout(() => div.classList.remove('show'), 10000); 
+                setTimeout(() => div.remove(), 14000); 
             };
+            setInterval(() => { if(Math.random() > 0.4) spawnMickey(); }, 30000);
 
-            setTimeout(spawnMickey, 5000);
-            setInterval(() => {
-                if(Math.random() > 0.4) spawnMickey();
-            }, 30000);
-
-            // 3. リアルな花火演出（打ち上げ式）
+            // 3. リアルな花火演出（パフォーマンス改善版）
             const fwCanvas = document.getElementById('fireworks-canvas');
             const ctx = fwCanvas.getContext('2d');
             let particles = [];
@@ -379,7 +345,6 @@
             window.addEventListener('resize', resizeCanvas);
             resizeCanvas();
 
-            // 花火の種（打ち上げ）クラス
             class Rocket {
                 constructor() {
                     this.x = Math.random() * fwCanvas.width;
@@ -391,27 +356,19 @@
                 }
                 update() {
                     this.y -= this.speed;
-                    // 重力減速
                     this.speed *= 0.98;
-                    // 軌跡
                     this.trail.push({x: this.x, y: this.y, alpha: 1});
                     if(this.trail.length > 5) this.trail.shift();
                     this.trail.forEach(t => t.alpha -= 0.1);
-                    
                     return this.y <= this.targetY || this.speed < 1;
                 }
                 draw(c) {
-                    c.save();
-                    c.fillStyle = this.color;
-                    this.trail.forEach(t => {
-                        c.globalAlpha = t.alpha;
-                        c.fillRect(t.x, t.y, 2, 6);
-                    });
+                    c.save(); c.fillStyle = this.color;
+                    this.trail.forEach(t => { c.globalAlpha = t.alpha; c.fillRect(t.x, t.y, 2, 6); });
                     c.restore();
                 }
             }
 
-            // 花火の爆発パーティクル
             class Particle {
                 constructor(x, y, color) {
                     this.x = x; this.y = y; this.color = color;
@@ -419,56 +376,40 @@
                     const speed = Math.random() * 5 + 1;
                     this.vx = Math.cos(angle) * speed;
                     this.vy = Math.sin(angle) * speed;
-                    this.alpha = 1;
-                    this.gravity = 0.05;
-                    this.decay = Math.random() * 0.01 + 0.005;
+                    this.alpha = 1; this.gravity = 0.05; this.decay = Math.random() * 0.01 + 0.005;
                 }
                 update() {
-                    this.vy += this.gravity;
-                    this.x += this.vx; this.y += this.vy;
-                    this.alpha -= this.decay;
+                    this.vy += this.gravity; this.x += this.vx; this.y += this.vy; this.alpha -= this.decay;
                 }
                 draw(c) {
-                    c.save();
-                    c.globalAlpha = this.alpha;
-                    c.fillStyle = this.color;
-                    c.beginPath();
-                    c.arc(this.x, this.y, 2, 0, Math.PI * 2);
-                    c.fill();
-                    c.restore();
+                    c.save(); c.globalAlpha = this.alpha; c.fillStyle = this.color;
+                    c.beginPath(); c.arc(this.x, this.y, 2, 0, Math.PI * 2); c.fill(); c.restore();
                 }
             }
 
             const animate = () => {
-                // 残像を残す
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; 
                 ctx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
-
-                // ロケット処理
                 for(let i = rockets.length - 1; i >= 0; i--) {
                     rockets[i].draw(ctx);
                     if(rockets[i].update()) {
-                        // 爆発！
                         const r = rockets[i];
-                        for(let j=0; j<60; j++) {
-                            particles.push(new Particle(r.x, r.y, r.color));
-                        }
+                        for(let j=0; j<60; j++) particles.push(new Particle(r.x, r.y, r.color));
                         rockets.splice(i, 1);
                     }
                 }
-
-                // パーティクル処理
                 for(let i = particles.length - 1; i >= 0; i--) {
-                    particles[i].draw(ctx);
-                    particles[i].update();
+                    particles[i].draw(ctx); particles[i].update();
                     if(particles[i].alpha <= 0) particles.splice(i, 1);
                 }
                 requestAnimationFrame(animate);
             };
             animate();
 
-            // 1分に1回、数発打ち上げ
+            // 【重要改善】タブが非アクティブ(裏)の時は花火を追加しない
             setInterval(() => {
+                if (document.hidden) return; // ← これで放置時の重さを解消
+                
                 let count = 0;
                 const interval = setInterval(() => {
                     rockets.push(new Rocket());
@@ -566,24 +507,17 @@
                         } else if(b.type === 'video') {
                             const ytId = this.getYoutubeId(b.url);
                             if(ytId) {
-                                m.innerHTML += `<div class="yt-thumbnail-container" onclick="app.openVideo('${ytId}')">
-                                                    <img src="https://img.youtube.com/vi/${ytId}/hqdefault.jpg" style="width:100%;">
-                                                    <div class="yt-play-icon">▶</div>
-                                                </div>`;
+                                m.innerHTML += `<div class="yt-thumbnail-container" onclick="app.openVideo('${ytId}')"><img src="https://img.youtube.com/vi/${ytId}/hqdefault.jpg" style="width:100%;"><div class="yt-play-icon">▶</div></div>`;
                             } else {
                                 m.innerHTML += `<video src="${b.url}" controls style="width:100%"></video>`;
                             }
                         } else if(b.type === 'table') {
                             let tableData = b.data;
-                            if (typeof tableData === 'string') {
-                                try { tableData = JSON.parse(tableData); } catch(e) { tableData = []; }
-                            }
+                            if (typeof tableData === 'string') { try { tableData = JSON.parse(tableData); } catch(e) { tableData = []; } }
                             m.innerHTML += this.renderTable(tableData);
                         } else if(b.type === 'timeline') {
                             let tlData = b.data;
-                            if (typeof tlData === 'string') {
-                                try { tlData = JSON.parse(tlData); } catch(e) { tlData = []; }
-                            }
+                            if (typeof tlData === 'string') { try { tlData = JSON.parse(tlData); } catch(e) { tlData = []; } }
                             m.innerHTML += this.renderTimeline(tlData); 
                         }
 
@@ -596,13 +530,11 @@
             renderTable: function(data) {
                 if(!data || !Array.isArray(data)) return '';
                 let h = '<table class="wiki-table">';
-                data.forEach((row, idx) => { 
+                data.forEach((row, idx) => { 
                     if(Array.isArray(row)) {
                         h += '<tr>';
-                        row.forEach(c => {
-                            h += (idx === 0) ? `<th>${this.parse(c)}</th>` : `<td>${this.parse(c)}</td>`;
-                        });
-                        h += '</tr>'; 
+                        row.forEach(c => { h += (idx === 0) ? `<th>${this.parse(c)}</th>` : `<td>${this.parse(c)}</td>`; });
+                        h += '</tr>'; 
                     }
                 });
                 return h + '</table>';
@@ -657,13 +589,7 @@
 
             parse: function(t) {
                 if(!t) return '';
-                return t.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-                        .replace(/\*(.*?)\*/g, '<i>$1</i>')
-                        .replace(/~~(.*?)~~/g, '<s>$1</s>')
-                        .replace(/<u>(.*?)<\/u>/g, '<u>$1</u>')
-                        .replace(/\[\[(.*?)\]\]/g, '<a href="#$1" style="color:#0645ad">$1</a>')
-                        .replace(/\[(https?:\/\/\S+)\s+(.+?)\]/g, '<a href="$1" target="_blank" style="color:#36b">$2 <i class="fas fa-external-link-alt" style="font-size:10px"></i></a>')
-                        .replace(/\n/g, '<br>');
+                return t.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>').replace(/~~(.*?)~~/g, '<s>$1</s>').replace(/<u>(.*?)<\/u>/g, '<u>$1</u>').replace(/\[\[(.*?)\]\]/g, '<a href="#$1" style="color:#0645ad">$1</a>').replace(/\[(https?:\/\/\S+)\s+(.+?)\]/g, '<a href="$1" target="_blank" style="color:#36b">$2 <i class="fas fa-external-link-alt" style="font-size:10px"></i></a>').replace(/\n/g, '<br>');
             },
 
             getYoutubeId: function(url) {
@@ -702,31 +628,27 @@
 
             createNewPage: async function() {
                 const id = prompt("新しいページのタイトル（ID）を入力してください:");
-                if(id) {
-                    location.hash = id;
-                    setTimeout(() => {
-                        this.toggleEdit();
-                    }, 1000);
-                }
+                if(id) { location.hash = id; setTimeout(() => { this.toggleEdit(); }, 1000); }
             },
 
             toggleEdit: function() {
                 if(!this.currentUser) return alert('編集するにはログインしてください');
                 document.getElementById('view-mode').classList.toggle('hidden');
                 document.getElementById('edit-mode').classList.toggle('hidden');
+                
+                // トップページ編集時はツールバーを隠す
+                const isHome = this.currentPageId === 'home';
+                document.getElementById('editor-toolbar-box').classList.toggle('hidden', isHome);
+                
                 if(!document.getElementById('edit-mode').classList.contains('hidden')) editor.load();
             },
 
             savePage: async function() {
                 try {
-                    // ボタンの文字を変える演出
                     const btns = document.querySelectorAll('.btn-magic-save');
                     btns.forEach(b => b.textContent = "保存中...");
-                    
                     const updated = editor.collect();
                     await setDoc(doc(db, "pages", this.currentPageId), updated);
-                    
-                    // アラートなしで完了
                     btns.forEach(b => b.textContent = "保存完了！");
                     setTimeout(() => { location.reload(); }, 500);
                 } catch(e) {
@@ -747,8 +669,6 @@
 
                 document.getElementById('edit-fields-wiki').classList.toggle('hidden', isHome);
                 document.getElementById('edit-fields-home').classList.toggle('hidden', !isHome);
-                // トップページ編集時はツールバー（文字装飾など）を隠す
-                document.getElementById('editor-toolbar-box').classList.toggle('hidden', isHome);
 
                 if(isHome) {
                     document.getElementById('home-featured-input').value = (data.featured || []).join(', ');
@@ -786,7 +706,6 @@
                 this.blocksContainer.querySelectorAll('.edit-block-item').forEach(el => {
                     const type = el.dataset.type;
                     let blockData = { type: type };
-                    
                     const mTitle = el.querySelector('.media-title-input');
                     if(mTitle && mTitle.value) blockData.mediaTitle = mTitle.value;
                     const mDesc = el.querySelector('.media-desc-input');
@@ -818,7 +737,6 @@
                         });
                         blockData.data = JSON.stringify(tlData);
                     }
-                    
                     blocks.push(blockData);
                 });
 
@@ -831,10 +749,7 @@
                 return {
                     title: app.data.title,
                     summary: document.getElementById('edit-summary').value,
-                    infobox: {
-                        image: document.getElementById('edit-ib-img').value,
-                        rows: ibRows
-                    },
+                    infobox: { image: document.getElementById('edit-ib-img').value, rows: ibRows },
                     blocks: blocks
                 };
             },
@@ -853,7 +768,6 @@
                 else if(type === 'table') data = { type: 'table', data: [['見出し1','見出し2'],['データ1','データ2']] };
                 else if(type === 'timeline') data = { type: 'timeline', data: [['2023','出来事']] };
                 else data.url = '';
-                
                 this.renderBlock(data);
             },
 
@@ -887,9 +801,7 @@
                         const safeData = (b.data || [['','']]).map(row => row.map(cell => cell.replace(/"/g, '&quot;')));
                         safeData.forEach(row => {
                             html += `<tr>`;
-                            row.forEach(cell => {
-                                html += `<td><textarea>${cell}</textarea></td>`;
-                            });
+                            row.forEach(cell => { html += `<td><textarea>${cell}</textarea></td>`; });
                             html += `<td><button onclick="this.closest('tr').remove()">×</button></td></tr>`;
                         });
                         html += `</tbody></table>
@@ -898,14 +810,13 @@
                                  </div>`;
                     }
                     else if(b.type === 'timeline') {
-                        html += `<div class="timeline-editor-area">`;
+                        // 【修正】SortableJS用コンテナとドラッグハンドル
+                        html += `<div class="timeline-editor-list">`;
                         const safeData = (b.data || [['','']]).map(row => row.map(cell => cell.replace(/"/g, '&quot;')));
                         safeData.forEach(row => {
                             html += `<div class="tl-edit-row">
-                                        <input class="edit-area tl-y-input" value="${row[0]||''}" placeholder="年/月">
+                                        <i class="fas fa-bars tl-handle"></i> <input class="edit-area tl-y-input" value="${row[0]||''}" placeholder="年/月">
                                         <input class="edit-area tl-e-input" value="${row[1]||''}" placeholder="出来事">
-                                        <button onclick="editor.moveRowUp(this)" style="margin-left:5px;">▲</button>
-                                        <button onclick="editor.moveRowDown(this)">▼</button>
                                         <button onclick="this.parentElement.remove()" style="margin-left:5px; color:red;">×</button>
                                      </div>`;
                         });
@@ -921,6 +832,14 @@
 
                 div.innerHTML = html;
                 this.blocksContainer.appendChild(div);
+
+                // タイムラインのドラッグ&ドロップを有効化
+                if (b.type === 'timeline') {
+                    const tlList = div.querySelector('.timeline-editor-list');
+                    if (tlList) {
+                        new Sortable(tlList, { handle: '.tl-handle', animation: 150 });
+                    }
+                }
             },
 
             apply: function(start, end) {
@@ -964,27 +883,12 @@
             addTlRow: function(btn) {
                 const div = document.createElement('div');
                 div.className = 'tl-edit-row';
-                div.innerHTML = `<input class="edit-area tl-y-input" placeholder="年/月">
+                div.innerHTML = `<i class="fas fa-bars tl-handle"></i>
+                                 <input class="edit-area tl-y-input" placeholder="年/月">
                                  <input class="edit-area tl-e-input" placeholder="出来事">
-                                 <button onclick="editor.moveRowUp(this)" style="margin-left:5px;">▲</button>
-                                 <button onclick="editor.moveRowDown(this)">▼</button>
                                  <button onclick="this.parentElement.remove()" style="margin-left:5px; color:red;">×</button>`;
-                // 挿入先は .timeline-editor-area
+                // .timeline-editor-list に追加
                 btn.parentElement.previousElementSibling.appendChild(div);
-            },
-
-            moveRowUp: function(btn) {
-                const row = btn.parentElement;
-                if (row.previousElementSibling) {
-                    row.parentNode.insertBefore(row, row.previousElementSibling);
-                }
-            },
-
-            moveRowDown: function(btn) {
-                const row = btn.parentElement;
-                if (row.nextElementSibling) {
-                    row.parentNode.insertBefore(row.nextElementSibling, row);
-                }
             },
 
             sortTimeline: function(btn) {
@@ -993,7 +897,6 @@
                 rows.sort((a, b) => {
                     const valA = a.querySelector('.tl-y-input').value;
                     const valB = b.querySelector('.tl-y-input').value;
-                    // 数値として比較（文字列含む場合は辞書順）
                     return valA.localeCompare(valB, undefined, {numeric: true, sensitivity: 'base'});
                 });
                 rows.forEach(r => area.appendChild(r));
