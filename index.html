@@ -1,926 +1,1028 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Disney Wiki - Royal Magical Edition</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-    <style>
-        :root {
-            --disney-blue: #1e366e;
-            --disney-gold: #c5a059;
-            --bg-color: #f4f5f7;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Disney Wiki Ultimate</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700&display=swap');
 
-        body { 
-            font-family: 'Noto Serif JP', serif; 
-            background-color: var(--bg-color); 
-            margin: 0; 
-            color: #202122; 
-            position: relative; 
-            overflow-x: hidden; 
-        }
+    :root {
+        --primary-color: #1a2b4c; /* 紺色 */
+        --accent-color: #c5a059; /* ゴールド */
+        --text-color: #333;
+        --bg-color: #f4f4f4;
+        --sidebar-width: 280px;
+    }
 
-        /* --- 演出関連 --- */
-        #effects-canvas, #fireworks-canvas {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
-        }
-        #effects-canvas { z-index: 9990; }
-        #fireworks-canvas { z-index: 9995; }
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Noto Sans JP', sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        height: 100vh;
+        display: flex;
+        overflow: hidden;
+    }
 
-        /* キラキラ */
-        .sparkle-cross {
-            position: absolute; width: 20px; height: 20px;
-            background: radial-gradient(circle, rgba(255,255,255,1) 10%, rgba(255,255,255,0.6) 40%, rgba(255,255,255,0) 70%);
-            border-radius: 50%; opacity: 0;
-            animation: flashSparkle 2.0s ease-in-out forwards;
-            filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.9));
-        }
-        .sparkle-cross::after, .sparkle-cross::before {
-            content: ''; position: absolute; top: 50%; left: 50%;
-            background: rgba(255, 255, 255, 0.9); border-radius: 50%;
-            transform: translate(-50%, -50%);
-            box-shadow: 0 0 5px rgba(255,255,255,0.8);
-        }
-        .sparkle-cross::after { width: 4px; height: 100%; } 
-        .sparkle-cross::before { width: 100%; height: 4px; } 
+    /* 左側サイドバー */
+    #sidebar {
+        width: var(--sidebar-width);
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        flex-direction: column;
+        border-right: 2px solid var(--accent-color);
+        box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+        z-index: 10;
+        position: relative;
+    }
 
-        @keyframes flashSparkle {
-            0% { transform: scale(0) rotate(0deg); opacity: 0; }
-            50% { transform: scale(1.2) rotate(45deg); opacity: 0.9; }
-            100% { transform: scale(0) rotate(90deg); opacity: 0; }
-        }
+    /* ロゴエリア */
+    .logo-area {
+        height: 80px;
+        display: flex;
+        align-items: center;
+        padding: 0 15px;
+        background-color: #111c33;
+        border-bottom: 1px solid var(--accent-color);
+        position: relative;
+    }
 
-        /* ミッキー */
-        .hidden-mickey {
-            position: absolute; width: 180px; height: 180px;
-            transition: transform 3s ease-in-out; opacity: 0.8;
-            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.2));
-        }
-        .mickey-left { left: -200px; top: 50%; }
-        .mickey-left.show { transform: translateX(250px) rotate(15deg); }
-        .mickey-right { right: -200px; top: 50%; }
-        .mickey-right.show { transform: translateX(-250px) rotate(-15deg); }
+    /* 隠れミッキーアイコン */
+    .mickey-icon {
+        width: 30px;
+        height: 30px;
+        position: relative;
+        margin-right: 15px;
+        flex-shrink: 0;
+    }
+    .mickey-head {
+        width: 18px;
+        height: 18px;
+        background: white;
+        border-radius: 50%;
+        position: absolute;
+        bottom: 2px;
+        left: 6px;
+    }
+    .mickey-ear {
+        width: 10px;
+        height: 10px;
+        background: white;
+        border-radius: 50%;
+        position: absolute;
+        top: 0;
+    }
+    .ear-left { left: 2px; }
+    .ear-right { right: 2px; }
 
-        /* UIコンポーネント */
-        header {
-            background: linear-gradient(135deg, var(--disney-blue), #0d1b38);
-            color: white; padding: 10px 30px; border-bottom: 3px solid var(--disney-gold);
-            display: flex; justify-content: space-between; align-items: center;
-            position: sticky; top: 0; z-index: 1000;
-        }
-        .logo { font-family: 'Cinzel', serif; font-size: 26px; font-weight: bold; color: var(--disney-gold); cursor: pointer; }
-        
-        .search-container { position: relative; width: 300px; }
-        .search-box { position: relative; display: flex; align-items: center; }
-        .search-box i { position: absolute; left: 12px; color: var(--disney-blue); }
-        .search-box input { width: 100%; padding: 8px 10px 8px 35px; border-radius: 20px; border: 1px solid var(--disney-gold); outline: none; }
-        .search-results {
-            position: absolute; top: 40px; left: 0; width: 100%; background: white;
-            border: 1px solid var(--disney-gold); border-radius: 5px; z-index: 1001; display: none;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-        .search-item { padding: 10px; color: #333; cursor: pointer; border-bottom: 1px solid #eee; }
-        .search-item:hover { background: #f0f0f0; }
+    /* ディズニーロゴ画像 */
+    .logo-img {
+        max-height: 50px;
+        max-width: 180px;
+        object-fit: contain;
+    }
 
-        .wrapper { display: flex; max-width: 1400px; margin: 20px auto; background: white; min-height: 90vh; box-shadow: 0 0 20px rgba(0,0,0,0.1); position: relative; z-index: 1; }
-        .sidebar { width: 280px; padding: 20px; background: #fbfbfb; border-right: 1px solid #eee; }
-        .main-content { flex: 1; padding: 40px; box-sizing: border-box; }
+    /* 検索ボックス */
+    .search-box {
+        padding: 15px;
+    }
+    .search-box input {
+        width: 100%;
+        padding: 8px;
+        border-radius: 20px;
+        border: none;
+        outline: none;
+        padding-left: 15px;
+        box-sizing: border-box;
+    }
 
-        /* コンテンツスタイル */
-        .page-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid #aaa; margin-bottom: 20px; padding-bottom: 10px; }
-        .intro-container { display: flex; gap: 30px; margin-bottom: 30px; align-items: flex-start; }
-        .fixed-summary { flex: 1; font-size: 1.1em; line-height: 1.8; white-space: pre-wrap; }
-        .infobox { width: 320px; border: 1px solid #aaa; background: #fff; padding: 5px; font-size: 90%; flex-shrink: 0; }
-        .infobox-head { background: var(--disney-blue); color: white; text-align: center; padding: 10px; font-weight: bold; }
-        .infobox img { width: 100%; border-bottom: 1px solid #eee; }
-        .infobox table { width: 100%; border-collapse: collapse; }
-        .infobox th { background: #f2f2f2; text-align: left; padding: 8px; width: 35%; border-bottom: 1px solid #eee; }
-        .infobox td { padding: 8px; border-bottom: 1px solid #eee; }
+    /* ページリスト */
+    #page-list {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 10px;
+    }
+    .page-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        border-radius: 5px;
+        transition: background 0.2s;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .page-item:hover {
+        background-color: rgba(255,255,255,0.1);
+    }
+    .page-item.active {
+        background-color: var(--accent-color);
+        color: var(--primary-color);
+        font-weight: bold;
+    }
+    .delete-btn {
+        background: none;
+        border: none;
+        color: inherit;
+        font-size: 1.2em;
+        cursor: pointer;
+        opacity: 0.6;
+        padding: 0 5px;
+    }
+    .delete-btn:hover { opacity: 1; }
 
-        .section-wrapper { display: flex; gap: 30px; margin-bottom: 30px; }
-        .section-text { flex: 1; }
-        .section-media { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; gap: 30px; }
-        h2 { border-bottom: 1px solid #aaa; color: var(--disney-blue); margin-top: 40px; padding-bottom: 5px; font-size: 1.8em; }
-        h3 { color: var(--disney-blue); margin-top: 25px; font-size: 1.4em; border-bottom: 1px dashed #ccc; }
+    /* 設定ボタンエリア */
+    .settings-area {
+        padding: 15px;
+        border-top: 1px solid rgba(255,255,255,0.2);
+    }
+    .settings-btn {
+        background: none;
+        border: 1px solid rgba(255,255,255,0.5);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 15px;
+        cursor: pointer;
+        font-size: 0.8em;
+        width: 100%;
+        text-align: center;
+        transition: 0.3s;
+    }
+    .settings-btn:hover {
+        background: rgba(255,255,255,0.2);
+    }
 
-        .media-box { border: 1px solid #eee; background: #fafafa; padding: 5px; text-align: center; cursor: pointer; transition: 0.2s; }
-        .media-box:hover { box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        .media-title { font-weight: bold; font-size: 0.9em; margin-bottom: 5px; color: var(--disney-blue); }
-        .media-desc { font-size: 0.85em; color: #555; margin-top: 5px; line-height: 1.4; }
-        
-        .timeline-box { border: 1px solid #ccc; padding: 10px; background: white; cursor: default; }
-        .timeline-row { display: flex; border-bottom: 1px dashed #eee; padding: 8px 0; }
-        .tl-year { width: 70px; font-weight: bold; color: var(--disney-blue); flex-shrink: 0; text-align: right; padding-right: 15px; border-right: 2px solid var(--disney-gold); }
-        .tl-event { padding-left: 15px; flex: 1; text-align: left; font-size: 0.95em; }
+    /* 設定モーダル */
+    #settings-modal {
+        display: none;
+        position: fixed;
+        bottom: 60px;
+        left: 10px;
+        width: 250px;
+        background: white;
+        color: #333;
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        z-index: 100;
+        padding: 15px;
+    }
+    .setting-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        font-size: 0.9em;
+    }
+    /* スイッチ */
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 34px;
+        height: 20px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 34px;
+    }
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 12px;
+        width: 12px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    input:checked + .slider { background-color: var(--primary-color); }
+    input:checked + .slider:before { transform: translateX(14px); }
 
-        .wiki-table { width: 100%; border-collapse: collapse; font-size: 14px; background: white; cursor: default; }
-        .wiki-table th, .wiki-table td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        .wiki-table th { background: #f0f0f0; font-weight: bold; text-align: center; }
 
-        /* モーダル */
-        .modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85);
-            z-index: 99999; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s;
-        }
-        .modal.active { opacity: 1; pointer-events: auto; }
-        .modal-content { position: relative; width: 90%; height: 90%; max-width: 1000px; background: black; box-shadow: 0 0 20px white; display:flex; justify-content:center; align-items:center; border-radius: 8px; overflow: hidden; }
-        .modal-close { position: absolute; top: 10px; right: 20px; color: white; font-size: 40px; cursor: pointer; z-index: 1000; text-shadow: 0 0 5px black; }
-        
-        /* 画像・PDFマーカーコンテナ */
-        .img-marker-container { position: relative; width: 100%; height: 100%; overflow: auto; display: flex; justify-content: center; align-items: center; background: #333; }
-        .img-marker-container img, .img-marker-container iframe, .img-marker-container embed, .img-marker-container object { 
-            max-width: none; /* 拡大のため制限解除 */
-            display: block; 
-        }
-        /* iframe/embedをレスポンシブに */
-        .pdf-viewer { width: 100%; height: 100%; border: none; }
+    /* メインコンテンツ */
+    #main-content {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        position: relative;
+    }
 
-        .img-marker {
-            position: absolute; width: 24px; height: 24px; transform: translate(-50%, -50%);
-            border-radius: 50%; cursor: pointer; z-index: 100;
-            box-shadow: 0 0 5px rgba(255,255,255,0.8);
-            border: 2px solid white;
-        }
-        .img-marker::after {
-            content: attr(data-text); position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.8); color: white; padding: 5px 10px; border-radius: 4px; font-size: 12px;
-            white-space: nowrap; opacity: 0; transition: 0.2s; pointer-events: none;
-        }
-        .img-marker:hover::after { opacity: 1; }
-        
-        .m-transparent { background: rgba(255,255,255,0.2); border: 2px dashed rgba(255,255,255,0.8); }
-        .m-black { background: black; }
-        .m-red { background: #ff3b30; }
-        .m-blue { background: #007aff; }
-        .m-green { background: #34c759; }
-        .m-yellow { background: #ffcc00; }
+    /* ツールバー */
+    .toolbar {
+        background-color: white;
+        padding: 10px 20px;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .tool-btn {
+        background: #eee;
+        border: 1px solid #ccc;
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9em;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .tool-btn:hover { background: #ddd; }
+    .tool-input {
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
 
-        /* リンクスタイル修正 */
-        a.wiki-link { color: #0645ad; font-weight: bold; text-decoration: none; border-bottom: 1px dotted #0645ad; }
-        a.wiki-link:hover { text-decoration: underline; background: #e6f2ff; }
-        a.ext-link { color: #3366bb; text-decoration: none; }
-        a.ext-link:hover { text-decoration: underline; }
+    /* 編集エリア */
+    #editor-container {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 40px;
+        position: relative;
+    }
+    
+    #wiki-title {
+        font-size: 2.5em;
+        font-weight: bold;
+        color: var(--primary-color);
+        border: none;
+        width: 100%;
+        outline: none;
+        background: transparent;
+        margin-bottom: 10px;
+        font-family: 'Noto Sans JP', serif;
+    }
 
-        .toc-list { list-style: none; padding: 0; font-size: 14px; }
-        .toc-link { color: #0645ad; text-decoration: none; cursor: pointer; display: block; padding: 3px 0; }
-        .toc-link:hover { text-decoration: underline; }
+    #wiki-subtitle {
+        font-size: 1em;
+        color: #666;
+        border: none;
+        border-bottom: 1px dashed #ccc;
+        width: 100%;
+        outline: none;
+        background: transparent;
+        margin-bottom: 20px;
+        padding-bottom: 5px;
+    }
 
-        /* エディタ */
-        .editor-toolbar {
-            background: #f8f9fa; border: 1px solid #ccc; padding: 8px;
-            display: flex; gap: 5px; position: sticky; top: 60px; z-index: 1000; margin-bottom: 20px;
-            flex-wrap: nowrap; align-items: center; overflow-x: auto; white-space: nowrap;
-        }
-        .t-btn { background: white; border: 1px solid #ccc; padding: 5px 10px; cursor: pointer; border-radius: 3px; font-family: sans-serif; white-space: nowrap; }
-        .t-btn:hover { background: #eee; }
-        
-        .edit-card { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; background: #fffdf5; border-radius: 8px; position: relative; }
-        .edit-area { width: 100%; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; font-family: serif; line-height: 1.5; font-size: 16px; }
-        .edit-card-handle { cursor: grab; color: #ccc; margin-right: 10px; font-size: 20px; }
-        
-        /* リンクプレビュー */
-        .link-preview { margin-top: 5px; max-width: 150px; max-height: 100px; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; cursor: pointer; }
-        .link-preview img, .link-preview video, .link-preview iframe { width: 100%; height: 100%; object-fit: cover; }
+    #wiki-body {
+        min-height: 300px;
+        outline: none;
+        line-height: 1.6;
+    }
 
-        .editable-table { width: 100%; border-collapse: collapse; background: white; margin-top: 10px; }
-        .editable-table td { border: 1px solid #ccc; padding: 0; }
-        .editable-table textarea { width: 100%; border: none; padding: 8px; box-sizing: border-box; outline: none; resize: vertical; min-height: 50px; font-family: inherit; }
+    /* wiki内の要素スタイル */
+    #wiki-body img, #wiki-body video {
+        max-width: 100%;
+        margin: 10px 0;
+        cursor: pointer; /* フォーカス可能を示す */
+        border: 2px solid transparent;
+    }
+    #wiki-body img:hover, #wiki-body video:hover {
+        border-color: var(--accent-color);
+    }
+    
+    /* リンクスタイル */
+    #wiki-body a {
+        color: #0056b3;
+        text-decoration: underline;
+        cursor: pointer;
+    }
 
-        .tl-edit-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; background: #fff; padding: 5px; border: 1px solid #eee; border-radius: 4px; }
-        .tl-handle { cursor: grab; color: #aaa; padding: 0 5px; font-size: 14px; }
-        .tl-y-input { width: 80px !important; }
-        .tl-e-input { flex: 1 !important; }
+    /* PDFコンテナ (擬似) */
+    .pdf-container {
+        width: 100%;
+        height: 500px; /* 固定高さ */
+        border: 1px solid #ccc;
+        background: #525659;
+        position: relative;
+        overflow: auto; /* PDF内スクロール */
+        margin: 10px 0;
+        cursor: pointer;
+    }
+    .pdf-content {
+        width: 100%;
+        min-height: 1000px; /* 長い文書を想定 */
+        background: white;
+        position: relative; /* マーカーの基準 */
+        padding: 20px;
+        box-sizing: border-box;
+    }
+    /* PDF内のマーカー */
+    .pdf-marker {
+        position: absolute;
+        background-color: rgba(255, 255, 0, 0.4);
+        border: 1px solid orange;
+        cursor: pointer;
+        z-index: 5;
+    }
 
-        .home-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 30px; }
-        .page-card { border: 1px solid #ddd; border-radius: 10px; overflow: hidden; background: white; cursor: pointer; transition: transform 0.2s; }
-        .page-card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .card-img { width: 100%; height: 180px; object-fit: cover; }
-        .card-body { padding: 15px; text-align: center; font-family: 'Cinzel', serif; font-weight: bold; color: var(--disney-blue); }
+    /* --- フォーカスモード (画像/PDF拡大) --- */
+    .focus-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.85);
+        z-index: 1000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+    }
+    .focus-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    
+    /* フォーカスされた要素のラッパー */
+    .focus-wrapper {
+        position: relative;
+        transition: transform 0.1s ease-out; /* スムーズな移動 */
+        will-change: transform;
+    }
+    
+    .focus-close {
+        position: absolute;
+        top: 20px;
+        right: 30px;
+        color: white;
+        font-size: 30px;
+        cursor: pointer;
+        z-index: 1001;
+    }
 
-        .btn-royal { background: var(--disney-blue); color: white; border: none; padding: 10px 25px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .hidden { display: none !important; }
+    /* TOPページの自動リンクボタン */
+    #auto-link-btn {
+        background-color: var(--accent-color);
+        color: var(--primary-color);
+        border: none;
+        padding: 15px 30px;
+        font-size: 1.2em;
+        border-radius: 30px;
+        cursor: pointer;
+        margin-top: 20px;
+        font-weight: bold;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    #auto-link-btn:hover {
+        transform: scale(1.05);
+    }
 
-        .btn-magic-save {
-            background-color: #c5a059; color: white; border: none; padding: 8px 18px; border-radius: 6px;
-            font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
-        }
-        .btn-magic-back {
-            background-color: #ccc; color: white; border: none; padding: 8px 18px; border-radius: 6px;
-            font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); white-space: nowrap;
-        }
-        .btn-magic-save:hover { background-color: #b08d4b; }
-        .btn-magic-back:hover { background-color: #bbb; }
+    /* --- 演出用CSS --- */
+    #fireworks-container {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        pointer-events: none;
+        z-index: 9999;
+    }
+    
+    /* ミッキー演出 */
+    .mickey-effect {
+        position: absolute;
+        pointer-events: none;
+        width: 20px;
+        height: 20px;
+        background: rgba(255,255,255,0.8);
+        border-radius: 50%;
+        animation: floatUp 2s ease-out forwards;
+        z-index: 9998;
+    }
+    .mickey-effect::before, .mickey-effect::after {
+        content: '';
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        background: inherit;
+        border-radius: 50%;
+        top: -6px;
+    }
+    .mickey-effect::before { left: -6px; }
+    .mickey-effect::after { right: -6px; }
+    
+    @keyframes floatUp {
+        0% { transform: translateY(0) scale(1); opacity: 1; }
+        100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
+    }
 
-    </style>
+</style>
 </head>
 <body>
-    <div id="effects-canvas"></div>
-    <canvas id="fireworks-canvas"></canvas>
 
-    <div id="media-modal" class="modal" onclick="app.closeModal()">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <div class="modal-close" onclick="app.closeModal()">×</div>
-            <div id="modal-body" style="width:100%; height:100%;"></div>
+<div id="settings-modal">
+    <div class="setting-row">
+        <span>ミッキー演出</span>
+        <label class="switch">
+            <input type="checkbox" id="toggle-mickey" checked>
+            <span class="slider"></span>
+        </label>
+    </div>
+    <div class="setting-row">
+        <span>花火演出</span>
+        <label class="switch">
+            <input type="checkbox" id="toggle-fireworks" checked>
+            <span class="slider"></span>
+        </label>
+    </div>
+    <div style="text-align: right; margin-top: 10px;">
+        <button onclick="toggleSettings()" style="padding:5px 10px; cursor:pointer;">閉じる</button>
+    </div>
+</div>
+
+<div id="focus-overlay" class="focus-overlay">
+    <div class="focus-close" onclick="closeFocus()">×</div>
+    <div id="focus-content-area" class="focus-wrapper">
+        </div>
+</div>
+
+<canvas id="fireworks-container"></canvas>
+
+<div id="sidebar">
+    <div class="logo-area">
+        <div class="mickey-icon">
+            <div class="mickey-head"></div>
+            <div class="mickey-ear ear-left"></div>
+            <div class="mickey-ear ear-right"></div>
+        </div>
+        <a href="https://fontmeme.com/ja/font-disney-logo/">
+            <img src="https://fontmeme.com/permalink/260204/eabb3794.png" alt="font-disney-logo" border="0" class="logo-img">
+        </a>
+    </div>
+
+    <div class="search-box">
+        <input type="text" id="search-input" placeholder="WIKIを検索 (サブ題名含む)..." oninput="searchWiki()">
+    </div>
+
+    <div id="page-list">
+        </div>
+
+    <div class="settings-area">
+        <div class="settings-btn" onclick="toggleSettings()">⚙ 設定</div>
+        <div class="settings-btn" onclick="createNewPage()" style="margin-top:5px; background:var(--accent-color); color:var(--primary-color); font-weight:bold;">＋ 新規ページ</div>
+    </div>
+</div>
+
+<div id="main-content">
+    
+    <div id="top-view" style="padding: 50px; text-align: center; display: block;">
+        <h1 style="font-size: 3em; color: var(--primary-color);">Welcome to DISNEY WIKI</h1>
+        <p>左のメニューからページを選択するか、新規作成してください。</p>
+        <button id="auto-link-btn" onclick="runAutoLinker()">全ページ自動リンク生成</button>
+        <p style="font-size:0.8em; color:#666; margin-top:10px;">※記事内の単語を自動検出し、対応するWikiページへのリンクを貼ります。</p>
+    </div>
+
+    <div id="editor-view" style="display: none; flex-direction: column; height: 100%;">
+        <div class="toolbar">
+            <button class="tool-btn" onclick="execCmd('bold')" title="太字"><b>B</b></button>
+            <button class="tool-btn" onclick="execCmd('italic')" title="斜体"><i>I</i></button>
+            <button class="tool-btn" onclick="execCmd('underline')" title="下線"><u>U</u></button>
+            <div style="width:1px; height:20px; background:#ccc; margin:0 5px;"></div>
+            <button class="tool-btn" onclick="addLink()" title="リンク挿入">🔗 リンク</button>
+            <button class="tool-btn" onclick="insertImage()" title="画像挿入">🖼 画像</button>
+            <button class="tool-btn" onclick="insertPDFDemo()" title="PDF(デモ)挿入">📄 PDF追加</button>
+            <div style="flex-grow:1;"></div>
+            <button class="tool-btn" onclick="saveCurrentPage()" style="background:var(--primary-color); color:white;">保存</button>
+        </div>
+
+        <div id="editor-container">
+            <input type="text" id="wiki-title" placeholder="ページタイトル" oninput="updateCurrentTitle()">
+            <input type="text" id="wiki-subtitle" placeholder="サブ題名/別名 (カンマ区切りで複数可: ミッキー, マウス, 主役)" title="検索や自動リンクに使用されます">
+            <div id="wiki-body" contenteditable="true"></div>
         </div>
     </div>
 
-    <header>
-        <div class="logo" onclick="app.goHome()">✨ Disney Wiki</div>
-        <div class="search-container">
-            <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" id="search-input" placeholder="Wiki内を検索..." oninput="app.searchLive(this.value)">
-            </div>
-            <div id="search-results" class="search-results"></div>
-        </div>
-        <button id="auth-btn" class="btn-royal" style="background: var(--disney-gold); color: #000;">ログイン</button>
-    </header>
+</div>
 
-    <div class="wrapper">
-        <aside class="sidebar" id="sidebar">
-            <div style="font-weight:bold; border-bottom:1px solid var(--disney-gold); margin-bottom:10px;">内容 / 目次</div>
-            <ul class="toc-list" id="toc-list"></ul>
-            <button onclick="app.createNewPage()" style="margin-top:30px; cursor:pointer; border:1px dashed var(--disney-gold); padding:10px; background:none; width:100%;">+ 新規ページ作成</button>
-        </aside>
+<script>
+    /* ================= 初期設定とデータ管理 ================= */
+    let pages = [];
+    let currentPageId = null;
+    let settings = {
+        mickey: true,
+        fireworks: true
+    };
 
-        <main class="main-content">
-            <div id="view-mode">
-                <div class="page-header">
-                    <h1 id="display-title" style="font-family:'Cinzel',serif; font-size:2.5em; margin:0;"></h1>
-                    <button class="btn-royal" onclick="app.toggleEdit()" style="background:none; border:1px solid #ccc; color:#666;">このページを編集する ✎</button>
-                </div>
-                <div id="page-content"></div>
-            </div>
+    // 起動時のロード
+    window.onload = function() {
+        loadData();
+        loadSettings();
+        renderPageList();
+        
+        // エディタのイベントリスナー設定（保存忘れ防止用簡易）
+        document.getElementById('wiki-body').addEventListener('input', function() {
+            // 自動保存などを入れたい場合はここに
+        });
 
-            <div id="edit-mode" class="hidden">
-                <div id="editor-toolbar-box" class="editor-toolbar">
-                    <button class="t-btn" onmousedown="event.preventDefault(); editor.apply('**','**')"><b>B</b></button>
-                    <button class="t-btn" onmousedown="event.preventDefault(); editor.apply('*','*')"><i>I</i></button>
-                    <button class="t-btn" onmousedown="event.preventDefault(); editor.apply('<u>','</u>')"><u>U</u></button>
-                    <button class="t-btn" onmousedown="event.preventDefault(); editor.applyLink('internal')"><i class="fas fa-link"></i></button>
-                    <button class="t-btn" onmousedown="event.preventDefault(); editor.applyLink('external')"><i class="fas fa-external-link-alt"></i></button>
-                    <button class="t-btn" onclick="editor.autoLink()" style="color:var(--disney-blue);"><i class="fas fa-magic"></i> 自動リンク</button>
-                    <div style="width:1px; background:#ccc; height:20px; margin:0 5px;"></div>
-                    <button class="t-btn" onclick="editor.addBlock('image')"><i class="fas fa-image"></i> 画像/GIF</button>
-                    <button class="t-btn" onclick="editor.addBlock('pdf')"><i class="fas fa-file-pdf"></i> PDF</button>
-                    <button class="t-btn" onclick="editor.addBlock('video')"><i class="fas fa-video"></i> 動画</button>
-                    <button class="t-btn" onclick="editor.addBlock('table')"><i class="fas fa-table"></i> 表</button>
-                    <button class="t-btn" onclick="editor.addBlock('timeline')"><i class="fas fa-history"></i> 時系列</button>
-                    <div style="flex-grow:1; min-width:20px;"></div> 
-                    <button id="save-btn-main" class="btn-magic-save" onclick="app.savePage()">✨ 魔法を保存</button>
-                    <button class="btn-magic-back" onclick="app.toggleEdit()">戻る</button>
-                </div>
+        // 花火ループ開始
+        requestAnimationFrame(fireworksLoop);
+    };
 
-                <div id="edit-fields-wiki">
-                    <div class="edit-card" style="border: 2px solid var(--disney-blue);">
-                        <h4 style="margin:0 0 10px 0; color:var(--disney-blue);">✨ ページ概要とインフォボックス</h4>
-                        <div style="display:flex; gap:15px; flex-wrap: wrap;">
-                            <div style="flex:1; min-width: 300px;">
-                                <label style="display:block; margin-bottom:5px; font-weight:bold;">ざっくり説明:</label>
-                                <textarea id="edit-summary" class="edit-area" style="height:150px;"></textarea>
-                            </div>
-                            <div style="width:300px; flex-shrink: 0;">
-                                <label style="display:block; margin-bottom:5px; font-weight:bold;">ボックス画像URL:</label>
-                                <input type="text" id="edit-ib-img" class="edit-area" oninput="editor.updatePreview(this)">
-                                <div class="link-preview"></div>
-                                <label style="display:block; margin:10px 0 5px; font-weight:bold;">項目（キー:値）:</label>
-                                <div id="ib-rows-container"></div>
-                                <button class="t-btn" onclick="editor.addIbRow()" style="width:100%; margin-top:5px;">+ 項目追加</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="editor-blocks-list"></div>
-                    <button onclick="editor.addBlock('section')" class="btn-royal" style="width:100%; margin-top:20px; background:#666;">+ 新しい見出し・文章を追加</button>
-                </div>
-
-                <div id="edit-fields-home" class="hidden">
-                    <div class="edit-card">
-                        <h3>🏠 トップページ設定</h3>
-                        <p>表示したいページIDをカンマ区切りで入力：</p>
-                        <input type="text" id="home-featured-input" class="edit-area" placeholder="Mickey, TDL, TDS">
-                    </div>
-                    <div style="margin-top:20px; text-align:center;">
-                        <button class="btn-magic-save" onclick="app.savePage()">✨ 魔法を保存</button>
-                        <button class="btn-magic-back" onclick="app.toggleEdit()">戻る</button>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, collection, query, getDocs } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyBXGAvYQnGZGIALlfsE93C4vBMR41Lp6QA",
-            authDomain: "disney-wiki-b76e8.firebaseapp.com",
-            projectId: "disney-wiki-b76e8",
-            storageBucket: "disney-wiki-b76e8.firebasestorage.app",
-            messagingSenderId: "929516211078",
-            appId: "1:929516211078:web:a9c5b3a32a9a9c089e3a07"
-        };
-
-        const fApp = initializeApp(firebaseConfig);
-        const auth = getAuth(fApp);
-        const db = getFirestore(fApp);
-        const provider = new GoogleAuthProvider();
-
-        // --- 演出スクリプト ---
-        function initEffects() {
-            const container = document.getElementById('effects-canvas');
-            
-            // 1. キラキラ
-            setInterval(() => {
-                if(document.hidden) return; 
-                const star = document.createElement('div');
-                star.className = 'sparkle-cross';
-                const isLeft = Math.random() > 0.5;
-                const leftPos = isLeft ? Math.random() * 10 : 90 + Math.random() * 10;
-                const size = 15 + Math.random() * 25; 
-                star.style.left = leftPos + '%'; star.style.top = (Math.random() * 100) + '%';
-                star.style.width = size + 'px'; star.style.height = size + 'px';
-                container.appendChild(star);
-                setTimeout(() => star.remove(), 2500);
-            }, 300);
-
-            // 2. 隠れミッキー
-            const spawnMickey = () => {
-                if(document.hidden) return;
-                const colors = ['#000000', '#FF0000', '#0000FF', '#FFFF00', '#008000', '#800080', '#00BFFF'];
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                const div = document.createElement('div');
-                div.className = 'hidden-mickey';
-                div.innerHTML = `<svg viewBox="0 0 100 100" style="width:100%; height:100%;"><circle cx="20" cy="20" r="20" fill="${color}" /><circle cx="80" cy="20" r="20" fill="${color}" /><circle cx="50" cy="55" r="28" fill="${color}" /></svg>`;
-                const isLeft = Math.random() > 0.5;
-                div.classList.add(isLeft ? 'mickey-left' : 'mickey-right');
-                div.style.top = (10 + Math.random() * 70) + '%';
-                container.appendChild(div);
-                setTimeout(() => div.classList.add('show'), 100);
-                setTimeout(() => div.classList.remove('show'), 10000); 
-                setTimeout(() => div.remove(), 14000); 
-            };
-            setInterval(() => { if(Math.random() > 0.4) spawnMickey(); }, 30000);
-
-            // 3. 花火（軽量化済み）
-            const fwCanvas = document.getElementById('fireworks-canvas');
-            const ctx = fwCanvas.getContext('2d');
-            let particles = [];
-            let rockets = [];
-            
-            const resizeCanvas = () => { fwCanvas.width = window.innerWidth; fwCanvas.height = window.innerHeight; };
-            window.addEventListener('resize', resizeCanvas);
-            resizeCanvas();
-
-            class Rocket {
-                constructor() {
-                    this.x = Math.random() * fwCanvas.width;
-                    this.y = fwCanvas.height;
-                    this.targetY = fwCanvas.height * 0.2 + Math.random() * (fwCanvas.height * 0.4);
-                    this.speed = 8 + Math.random() * 4;
-                    this.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
-                    this.trail = [];
-                }
-                update() {
-                    this.y -= this.speed;
-                    this.speed *= 0.98;
-                    this.trail.push({x: this.x, y: this.y, alpha: 1});
-                    if(this.trail.length > 5) this.trail.shift();
-                    this.trail.forEach(t => t.alpha -= 0.1);
-                    return this.y <= this.targetY || this.speed < 1;
-                }
-                draw(c) {
-                    c.save(); c.fillStyle = this.color;
-                    this.trail.forEach(t => { c.globalAlpha = t.alpha; c.fillRect(t.x, t.y, 2, 6); });
-                    c.restore();
-                }
-            }
-
-            class Particle {
-                constructor(x, y, color) {
-                    this.x = x; this.y = y; this.color = color;
-                    const angle = Math.random() * Math.PI * 2;
-                    const speed = Math.random() * 5 + 1;
-                    this.vx = Math.cos(angle) * speed;
-                    this.vy = Math.sin(angle) * speed;
-                    this.alpha = 1; this.gravity = 0.05; this.decay = Math.random() * 0.01 + 0.005;
-                }
-                update() {
-                    this.vy += this.gravity; this.x += this.vx; this.y += this.vy; this.alpha -= this.decay;
-                }
-                draw(c) {
-                    c.save(); c.globalAlpha = this.alpha; c.fillStyle = this.color;
-                    c.beginPath(); c.arc(this.x, this.y, 2, 0, Math.PI * 2); c.fill(); c.restore();
-                }
-            }
-
-            const animate = () => {
-                if(document.hidden) { requestAnimationFrame(animate); return; } // 裏では描画停止
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; 
-                ctx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
-                for(let i = rockets.length - 1; i >= 0; i--) {
-                    rockets[i].draw(ctx);
-                    if(rockets[i].update()) {
-                        const r = rockets[i];
-                        for(let j=0; j<60; j++) particles.push(new Particle(r.x, r.y, r.color));
-                        rockets.splice(i, 1);
-                    }
-                }
-                for(let i = particles.length - 1; i >= 0; i--) {
-                    particles[i].draw(ctx); particles[i].update();
-                    if(particles[i].alpha <= 0) particles.splice(i, 1);
-                }
-                requestAnimationFrame(animate);
-            };
-            animate();
-
-            setInterval(() => {
-                if (document.hidden) return; 
-                let count = 0;
-                const interval = setInterval(() => {
-                    rockets.push(new Rocket());
-                    count++;
-                    if(count > 8) clearInterval(interval); 
-                }, 800);
-            }, 60000); 
+    function loadData() {
+        const storedPages = localStorage.getItem('disney_wiki_pages');
+        if (storedPages) {
+            pages = JSON.parse(storedPages);
+        } else {
+            // 初期データがない場合
+            pages = [
+                { id: 1, title: 'ミッキーマウス', subtitle: 'ミッキー, スタア', content: '<b>ミッキーマウス</b>はディズニーのキャラクターです。<br>彼は世界中で愛されています。' },
+                { id: 2, title: 'シンデレラ城', subtitle: 'TDL, お城', content: '東京ディズニーランドのシンボルです。' }
+            ];
+            saveData();
         }
-        initEffects();
+    }
 
-        // --- App Logic ---
-        window.app = {
-            currentPageId: 'home',
-            currentUser: null,
-            data: {},
+    function saveData() {
+        localStorage.setItem('disney_wiki_pages', JSON.stringify(pages));
+    }
 
-            init: function() {
-                onAuthStateChanged(auth, (user) => {
-                    this.currentUser = user;
-                    document.getElementById('auth-btn').textContent = user ? 'ログアウト' : 'ログイン';
-                    document.getElementById('auth-btn').onclick = () => user ? signOut(auth) : signInWithPopup(auth, provider);
-                });
-                window.addEventListener('hashchange', () => this.router());
-                this.router();
-            },
+    function loadSettings() {
+        const s = localStorage.getItem('disney_wiki_settings');
+        if (s) {
+            settings = JSON.parse(s);
+            document.getElementById('toggle-mickey').checked = settings.mickey;
+            document.getElementById('toggle-fireworks').checked = settings.fireworks;
+        }
+        
+        // 設定リスナー
+        document.getElementById('toggle-mickey').addEventListener('change', (e) => {
+            settings.mickey = e.target.checked;
+            localStorage.setItem('disney_wiki_settings', JSON.stringify(settings));
+        });
+        document.getElementById('toggle-fireworks').addEventListener('change', (e) => {
+            settings.fireworks = e.target.checked;
+            localStorage.setItem('disney_wiki_settings', JSON.stringify(settings));
+        });
+    }
 
-            router: function() {
-                const h = decodeURIComponent(location.hash.replace('#', '')) || 'home';
-                this.currentPageId = h;
-                this.loadPage(h);
-                window.scrollTo(0,0);
-            },
+    function toggleSettings() {
+        const modal = document.getElementById('settings-modal');
+        modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
+    }
 
-            goHome: function() { location.hash = 'home'; },
+    /* ================= ページ管理・表示 ================= */
+    function renderPageList(filterText = '') {
+        const list = document.getElementById('page-list');
+        list.innerHTML = '';
+        
+        const terms = filterText.toLowerCase();
 
-            loadPage: async function(id) {
-                const snap = await getDoc(doc(db, "pages", id));
-                this.data = snap.exists() ? snap.data() : { title: id, summary: '', blocks: [], infobox: { image:'', rows:[] }, featured: [] };
-                this.render();
-            },
+        pages.forEach(page => {
+            // タイトルまたはサブタイトルで検索
+            const matchTitle = page.title.toLowerCase().includes(terms);
+            const matchSub = page.subtitle && page.subtitle.toLowerCase().includes(terms);
 
-            render: function() {
-                const isHome = this.currentPageId === 'home';
-                document.getElementById('sidebar').classList.toggle('hidden', isHome);
-                document.getElementById('display-title').textContent = this.data.title;
-                const container = document.getElementById('page-content');
-                container.innerHTML = '';
-
-                if (isHome) {
-                    this.renderHome(container);
-                } else {
-                    this.renderWiki(container);
-                    this.renderTOC();
-                }
-            },
-
-            renderWiki: function(container) {
-                const introWrap = document.createElement('div');
-                introWrap.className = 'intro-container';
-                
-                let sumHtml = `<div class="fixed-summary">${this.parse(this.data.summary || '')}</div>`;
-                let ibHtml = '';
-                const ib = this.data.infobox;
-                if(ib && (ib.image || (ib.rows && ib.rows.length > 0))) {
-                    ibHtml = `<div class="infobox"><div class="infobox-head">${this.data.title}</div>`;
-                    if(ib.image) ibHtml += `<img src="${ib.image}">`;
-                    ibHtml += `<table>`;
-                    ib.rows?.forEach(r => ibHtml += `<tr><th>${r.key}</th><td>${this.parse(r.value)}</td></tr>`);
-                    ibHtml += `</table></div>`;
-                }
-                introWrap.innerHTML = sumHtml + ibHtml;
-                container.appendChild(introWrap);
-
-                let currentWrap = null, currentMedia = null;
-                (this.data.blocks || []).forEach((b, i) => {
-                    if(b.type === 'section') {
-                        currentWrap = document.createElement('div');
-                        currentWrap.className = 'section-wrapper';
-                        const text = document.createElement('div');
-                        text.className = 'section-text';
-                        const tag = (b.level == 3) ? 'h3' : 'h2';
-                        text.innerHTML = `<${tag} id="sec-${i}">${b.heading}</${tag}><div>${this.parse(b.content)}</div>`;
-                        currentWrap.appendChild(text);
-                        currentMedia = document.createElement('div');
-                        currentMedia.className = 'section-media';
-                        currentWrap.appendChild(currentMedia);
-                        container.appendChild(currentWrap);
-                    } 
-                    else if (currentMedia) {
-                        const m = document.createElement('div');
-                        m.className = 'media-box';
-                        if(b.mediaTitle) m.innerHTML += `<div class="media-title">${b.mediaTitle}</div>`;
-
-                        if(b.type === 'image' || b.type === 'pdf') {
-                            // 画像・PDF・GIFクリックでモーダル表示
-                            const markersJson = b.markers ? JSON.stringify(b.markers).replace(/"/g, '&quot;') : '[]';
-                            // PDFならPDFビューア、それ以外は画像タグ
-                            const contentTag = (b.type === 'pdf') 
-                                ? `<div class="pdf-icon" style="font-size:50px; color:red;"><i class="fas fa-file-pdf"></i></div><div style="font-size:0.8em; margin-top:5px;">クリックして拡大</div>`
-                                : `<img src="${b.url}" style="width:100%;">`;
-                            
-                            m.innerHTML += `<div onclick='app.openMediaModal("${b.type}", "${b.url}", ${markersJson})'>${contentTag}</div>`;
-                        } else if(b.type === 'video') {
-                            const ytId = this.getYoutubeId(b.url);
-                            if(ytId) {
-                                m.innerHTML += `<div class="yt-thumbnail-container" onclick="app.openVideo('${ytId}')"><img src="https://img.youtube.com/vi/${ytId}/hqdefault.jpg" style="width:100%;"><div class="yt-play-icon">▶</div></div>`;
-                            } else {
-                                m.innerHTML += `<video src="${b.url}" controls style="width:100%"></video>`;
-                            }
-                        } else if(b.type === 'table') {
-                            let tableData = b.data;
-                            if (typeof tableData === 'string') { try { tableData = JSON.parse(tableData); } catch(e) { tableData = []; } }
-                            m.innerHTML += this.renderTable(tableData);
-                        } else if(b.type === 'timeline') {
-                            let tlData = b.data;
-                            if (typeof tlData === 'string') { try { tlData = JSON.parse(tlData); } catch(e) { tlData = []; } }
-                            m.innerHTML += this.renderTimeline(tlData); 
-                        }
-
-                        if(b.mediaDesc) m.innerHTML += `<div class="media-desc">${this.parse(b.mediaDesc)}</div>`;
-                        currentMedia.appendChild(m);
-                    }
-                });
-            },
-
-            // 正規表現の修正（太字・斜体・Wikiリンク・外部リンク）
-            parse: function(t) {
-                if(!t) return '';
-                let html = t
-                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') // 太字
-                    .replace(/\*(.*?)\*/g, '<i>$1</i>') // 斜体
-                    .replace(/~~(.*?)~~/g, '<s>$1</s>') // 取消線
-                    .replace(/<u>(.*?)<\/u>/g, '<u>$1</u>') // 下線
-                    .replace(/\[\[(.*?)\]\]/g, '<a href="#$1" class="wiki-link">$1</a>') // Wikiリンク
-                    .replace(/\[(https?:\/\/[^\s]+)\s+(.*?)\]/g, '<a href="$1" target="_blank" class="ext-link">$2 <i class="fas fa-external-link-alt" style="font-size:0.8em"></i></a>') // 外部リンク [url text]
-                    .replace(/\n/g, '<br>'); // 改行
-                return html;
-            },
-
-            // --- モーダル制御 ---
-            openVideo: function(id) {
-                const b = document.getElementById('modal-body');
-                b.innerHTML = `<div id="video-frame-container" style="width:80%; aspect-ratio:16/9;"><iframe width="100%" height="100%" src="https://www.youtube.com/embed/${id}?autoplay=1" frameborder="0" allowfullscreen></iframe></div>`;
-                document.getElementById('media-modal').classList.add('active');
-            },
-            
-            openMediaModal: function(type, url, markers=[]) {
-                const b = document.getElementById('modal-body');
-                let contentHtml = '';
-                if(type === 'pdf') {
-                    contentHtml = `<iframe src="${url}" class="pdf-viewer"></iframe>`;
-                } else {
-                    contentHtml = `<img src="${url}">`;
-                }
-
-                let html = `<div class="img-marker-container" style="width:100%; height:100%;">${contentHtml}`;
-                markers.forEach(m => {
-                    const clickAction = m.link ? (m.link.startsWith('http') ? `window.open('${m.link}')` : `location.hash='${m.link}'; app.closeModal();`) : '';
-                    html += `<div class="img-marker m-${m.color}" style="top:${m.y}%; left:${m.x}%;" data-text="${m.text}" onclick="${clickAction}"></div>`;
-                });
-                html += `</div>`;
-                b.innerHTML = html;
-                document.getElementById('media-modal').classList.add('active');
-            },
-
-            closeModal: function() {
-                document.getElementById('media-modal').classList.remove('active');
-                document.getElementById('modal-body').innerHTML = '';
-            },
-
-            // その他（既存）
-            renderTable: function(data) {
-                if(!data || !Array.isArray(data)) return '';
-                let h = '<table class="wiki-table">';
-                data.forEach((row, idx) => { if(Array.isArray(row)) { h += '<tr>'; row.forEach(c => { h += (idx === 0) ? `<th>${this.parse(c)}</th>` : `<td>${this.parse(c)}</td>`; }); h += '</tr>'; }});
-                return h + '</table>';
-            },
-            renderTimeline: function(data) {
-                if(!data || !Array.isArray(data)) return '';
-                let h = `<div class="timeline-box">`;
-                data.forEach(row => { if(Array.isArray(row) && row.length >= 2) h += `<div class="timeline-row"><div class="tl-year">${row[0]}</div><div class="tl-event">${this.parse(row[1])}</div></div>`; });
-                return h + `</div>`;
-            },
-            renderHome: async function(c) {
-                const g = document.createElement('div'); g.className = 'home-grid';
-                for(const id of (this.data.featured || [])) {
-                    const s = await getDoc(doc(db, "pages", id.trim()));
-                    if(s.exists()){ const d = s.data(); const img = d.infobox?.image || ''; g.innerHTML += `<div class="page-card" onclick="location.hash='${id.trim()}'"><img src="${img}" class="card-img"><div class="card-body">${d.title}</div></div>`; }
-                }
-                c.appendChild(g);
-            },
-            renderTOC: function() {
-                const l = document.getElementById('toc-list'); l.innerHTML = '';
-                (this.data.blocks || []).forEach((b, i) => { if(b.type === 'section') { const li = document.createElement('li'); li.style.marginLeft = b.level == 3 ? '15px' : '0'; li.innerHTML = `<a class="toc-link" onclick="app.scrollToBlock(${i})">${b.heading || '（無題）'}</a>`; l.appendChild(li); }});
-            },
-            scrollToBlock: function(i) { const el = document.getElementById(`sec-${i}`); if(el) window.scrollTo({ top: el.offsetTop - 80, behavior: 'smooth' }); },
-            getYoutubeId: function(url) { const m = url.match(/^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/); return (m && m[7].length == 11) ? m[7] : false; },
-            searchLive: async function(val) {
-                const res = document.getElementById('search-results');
-                if(!val) { res.style.display = 'none'; return; }
-                const snap = await getDocs(query(collection(db, "pages")));
-                res.innerHTML = ''; let count = 0;
-                snap.forEach(d => { if(d.id.toLowerCase().includes(val.toLowerCase()) && count < 8) { const item = document.createElement('div'); item.className = 'search-item'; item.textContent = d.id; item.onclick = () => { location.hash = d.id; res.style.display = 'none'; document.getElementById('search-input').value=''; }; res.appendChild(item); count++; }});
-                res.style.display = count > 0 ? 'block' : 'none';
-            },
-            createNewPage: async function() { const id = prompt("新しいページのタイトル（ID）を入力してください:"); if(id) { location.hash = id; setTimeout(() => { this.toggleEdit(); }, 1000); } },
-            toggleEdit: function() {
-                if(!this.currentUser) return alert('編集するにはログインしてください');
-                document.getElementById('view-mode').classList.toggle('hidden'); document.getElementById('edit-mode').classList.toggle('hidden');
-                document.getElementById('editor-toolbar-box').classList.toggle('hidden', this.currentPageId === 'home');
-                if(!document.getElementById('edit-mode').classList.contains('hidden')) editor.load();
-            },
-            savePage: async function() {
-                try {
-                    document.querySelectorAll('.btn-magic-save').forEach(b => b.textContent = "保存中...");
-                    const updated = editor.collect();
-                    await setDoc(doc(db, "pages", this.currentPageId), updated);
-                    document.querySelectorAll('.btn-magic-save').forEach(b => b.textContent = "保存完了！");
-                    setTimeout(() => { location.reload(); }, 500);
-                } catch(e) { alert("保存失敗: " + e.message); console.error(e); }
+            if (matchTitle || matchSub) {
+                const item = document.createElement('div');
+                item.className = `page-item ${currentPageId === page.id ? 'active' : ''}`;
+                item.innerHTML = `
+                    <span onclick="openPage(${page.id})">${page.title}</span>
+                    <button class="delete-btn" onclick="deletePage(${page.id})">×</button>
+                `;
+                list.appendChild(item);
             }
-        };
+        });
+    }
 
-        // --- Editor Logic ---
-        window.editor = {
-            blocksContainer: document.getElementById('editor-blocks-list'),
-            currentEditingImgBlock: null, // マーカー編集中のブロック参照
+    function searchWiki() {
+        const text = document.getElementById('search-input').value;
+        renderPageList(text);
+    }
+
+    function createNewPage() {
+        const newId = Date.now();
+        const newPage = {
+            id: newId,
+            title: '新規ページ',
+            subtitle: '',
+            content: 'ここに内容を書いてください...'
+        };
+        pages.push(newPage);
+        saveData();
+        renderPageList();
+        openPage(newId);
+    }
+
+    function deletePage(id) {
+        if(!confirm('本当に削除しますか？')) return;
+        pages = pages.filter(p => p.id !== id);
+        saveData();
+        renderPageList();
+        if(currentPageId === id) {
+            showTop();
+        }
+    }
+
+    function openPage(id) {
+        currentPageId = id;
+        const page = pages.find(p => p.id === id);
+        if (!page) return;
+
+        document.getElementById('top-view').style.display = 'none';
+        document.getElementById('editor-view').style.display = 'flex';
+        
+        document.getElementById('wiki-title').value = page.title;
+        document.getElementById('wiki-subtitle').value = page.subtitle || '';
+        document.getElementById('wiki-body').innerHTML = page.content;
+
+        // リストのアクティブ表示更新
+        renderPageList(document.getElementById('search-input').value);
+
+        // コンテンツ内のメディアクリックイベントを再設定
+        attachMediaEvents();
+    }
+
+    function showTop() {
+        currentPageId = null;
+        document.getElementById('top-view').style.display = 'block';
+        document.getElementById('editor-view').style.display = 'none';
+        renderPageList();
+    }
+
+    function saveCurrentPage() {
+        if (!currentPageId) return;
+        const page = pages.find(p => p.id === currentPageId);
+        page.title = document.getElementById('wiki-title').value;
+        page.subtitle = document.getElementById('wiki-subtitle').value;
+        page.content = document.getElementById('wiki-body').innerHTML;
+        saveData();
+        renderPageList();
+        
+        // 演出
+        if(settings.mickey) createMickeyEffect();
+    }
+    
+    function updateCurrentTitle() {
+        // リアルタイム反映したければここでリスト更新
+        // renderPageList(); 
+    }
+
+    /* ================= エディタ機能 (修正版) ================= */
+    
+    // execCommandはdeprecatedですが、単純な太字・斜体には依然として最も確実です
+    function execCmd(command, value = null) {
+        document.execCommand(command, false, value);
+        document.getElementById('wiki-body').focus();
+    }
+
+    // リンク追加機能
+    function addLink() {
+        const url = prompt("リンク先のURLを入力してください（外部サイトまたはページID）:", "http://");
+        if (url) {
+            // 選択範囲があるか確認
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                document.execCommand('createLink', false, url);
+                
+                // 挿入されたリンクに対してtarget="_blank"などを付与したい場合
+                // この時点では単純なaタグになります。クリック時の挙動はGlobalのクリックリスナーで制御します。
+            }
+        }
+    }
+
+    function insertImage() {
+        const url = prompt("画像のURLを入力してください:", "https://");
+        if(url) {
+            document.execCommand('insertImage', false, url);
+            attachMediaEvents(); // 新しい画像にイベント付与
+        }
+    }
+
+    function insertPDFDemo() {
+        // PDFの代わりとなるスクロール可能なコンテナを挿入
+        const html = `
+            <div class="pdf-container">
+                <div class="pdf-content">
+                    <h3>PDFドキュメント (デモ)</h3>
+                    <p>ここに長い文章があります...</p>
+                    <br><br><br><br><br>
+                    <p>スクロールしてもマーカーは追従します。</p>
+                    <div class="pdf-marker" style="top: 100px; left: 50px; width: 200px; height: 30px;" title="マーカー"></div>
+                    <br><br><br><br><br><br><br><br>
+                    <p>ページの終わり</p>
+                </div>
+            </div>
+        `;
+        document.execCommand('insertHTML', false, html);
+        attachMediaEvents();
+    }
+
+    // リンククリックのハンドリング（Wiki内遷移 or 外部）
+    document.getElementById('wiki-body').addEventListener('click', function(e) {
+        if (e.target.tagName === 'A') {
+            const href = e.target.getAttribute('href');
             
-            load: function() {
-                const data = app.data;
-                const isHome = app.currentPageId === 'home';
-                document.getElementById('edit-fields-wiki').classList.toggle('hidden', isHome);
-                document.getElementById('edit-fields-home').classList.toggle('hidden', !isHome);
-                if(isHome) {
-                    document.getElementById('home-featured-input').value = (data.featured || []).join(', ');
-                } else {
-                    document.getElementById('edit-summary').value = data.summary || '';
-                    document.getElementById('edit-ib-img').value = data.infobox?.image || '';
-                    const ibCon = document.getElementById('ib-rows-container'); ibCon.innerHTML = '';
-                    (data.infobox?.rows || []).forEach(r => this.addIbRow(r.key, r.value));
-                    
-                    this.blocksContainer.innerHTML = '';
-                    (data.blocks || []).forEach(b => {
-                        let blockForEditor = { ...b };
-                        if ((b.type === 'table' || b.type === 'timeline') && typeof b.data === 'string') { try { blockForEditor.data = JSON.parse(b.data); } catch(e) { blockForEditor.data = []; } }
-                        this.renderBlock(blockForEditor);
-                    });
-                    new Sortable(this.blocksContainer, { handle: '.edit-card-handle', animation: 150 });
-                }
-            },
+            // 内部リンク判定（簡易的にページIDかタイトルでのマッチングを試みる）
+            // 自動リンク機能ではページIDを href="#wiki-123" のように入れる想定
+            if(href.startsWith('#wiki-')) {
+                e.preventDefault();
+                const targetId = parseInt(href.replace('#wiki-', ''));
+                openPage(targetId);
+            } else {
+                // 外部リンクは別タブで開く
+                e.preventDefault();
+                window.open(href, '_blank');
+            }
+        }
+    });
 
-            collect: function() {
-                if(app.currentPageId === 'home') { return { title: 'Home', featured: document.getElementById('home-featured-input').value.split(',').map(s=>s.trim()).filter(s=>s) }; }
-                const blocks = [];
-                this.blocksContainer.querySelectorAll('.edit-block-item').forEach(el => {
-                    const type = el.dataset.type;
-                    let blockData = { type: type };
-                    const mTitle = el.querySelector('.media-title-input'); if(mTitle) blockData.mediaTitle = mTitle.value;
-                    const mDesc = el.querySelector('.media-desc-input'); if(mDesc) blockData.mediaDesc = mDesc.value;
+    /* ================= メディアフォーカス & 拡大縮小機能 ================= */
 
-                    if(type === 'section') {
-                        blockData.level = el.querySelector('select').value;
-                        blockData.heading = el.querySelector('.heading-input').value;
-                        blockData.content = el.querySelector('.content-input').value;
-                    } else if(type === 'image' || type === 'pdf') {
-                        blockData.url = el.querySelector('.url-input').value;
-                        // マーカーデータ収集
-                        const markersJson = el.querySelector('.markers-input').value;
-                        try { blockData.markers = JSON.parse(markersJson); } catch(e) { blockData.markers = []; }
-                    } else if(type === 'video') {
-                        blockData.url = el.querySelector('.url-input').value;
-                    } else if(type === 'table') {
-                        const rows = []; el.querySelectorAll('tr').forEach(tr => { const cells = []; tr.querySelectorAll('textarea').forEach(ta => cells.push(ta.value)); if(cells.length > 0) rows.push(cells); });
-                        blockData.data = JSON.stringify(rows);
-                    } else if(type === 'timeline') {
-                        const tlData = []; el.querySelectorAll('.tl-edit-row').forEach(row => { tlData.push([row.querySelector('.tl-y-input').value, row.querySelector('.tl-e-input').value]); });
-                        blockData.data = JSON.stringify(tlData);
-                    }
-                    blocks.push(blockData);
-                });
-                const ibRows = []; document.querySelectorAll('.ib-row').forEach(row => { ibRows.push({ key: row.querySelector('.ib-k').value, value: row.querySelector('.ib-v').value }); });
-                return { title: app.data.title, summary: document.getElementById('edit-summary').value, infobox: { image: document.getElementById('edit-ib-img').value, rows: ibRows }, blocks: blocks };
-            },
+    let currentFocusScale = 1;
+    let currentFocusX = 0;
+    let currentFocusY = 0;
 
-            addIbRow: function(k='', v='') {
-                const div = document.createElement('div'); div.className = 'ib-row'; div.style = "display:flex; gap:5px; margin-bottom:5px;";
-                div.innerHTML = `<input type="text" class="ib-k edit-area" value="${k}" style="width:40%" placeholder="項目"><input type="text" class="ib-v edit-area" value="${v}" style="width:60%" placeholder="内容"><button class="t-btn" onclick="this.parentElement.remove()">×</button>`;
-                document.getElementById('ib-rows-container').appendChild(div);
-            },
-
-            addBlock: function(type) {
-                let data = { type: type };
-                if(type === 'section') data = { type: 'section', heading: '', content: '', level: 2 };
-                else if(type === 'table') data = { type: 'table', data: [['見出し1','見出し2'],['データ1','データ2']] };
-                else if(type === 'timeline') data = { type: 'timeline', data: [['2023','出来事']] };
-                else if(type === 'image' || type === 'pdf') data = { type: type, url: '', markers: [] };
-                else data.url = '';
-                this.renderBlock(data);
-            },
-
-            renderBlock: function(b) {
-                const div = document.createElement('div'); div.className = 'edit-card edit-block-item'; div.dataset.type = b.type;
-                let html = `<div style="display:flex; justify-content:space-between; margin-bottom:10px;"><div style="display:flex; align-items:center;"><i class="fas fa-bars edit-card-handle"></i> <span style="font-weight:bold; color:var(--disney-blue); text-transform:uppercase;">${b.type}</span></div><button onclick="this.closest('.edit-card').remove()" style="color:red;">削除</button></div>`;
-
-                if(b.type === 'section') {
-                    html += `<select class="edit-area" style="margin-bottom:5px;"><option value="2" ${b.level==2?'selected':''}>大見出し (H2)</option><option value="3" ${b.level==3?'selected':''}>小見出し (H3)</option></select><input type="text" class="edit-area heading-input" value="${b.heading||''}" placeholder="見出し" style="font-weight:bold; margin-bottom:5px;"><textarea class="edit-area content-input" style="height:100px;" onfocus="activeInput=this">${b.content||''}</textarea>`;
-                } else {
-                    html += `<input type="text" class="edit-area media-title-input" value="${b.mediaTitle||''}" placeholder="メディアタイトル (任意)" style="margin-bottom:5px;">`;
-                    if(b.type === 'image' || b.type === 'pdf') {
-                        const markersJson = JSON.stringify(b.markers || []).replace(/"/g, '&quot;');
-                        html += `<div style="display:flex; gap:5px; flex-direction:column;">
-                                    <div style="display:flex; gap:5px;">
-                                        <input type="text" class="edit-area url-input" value="${b.url||''}" placeholder="${b.type==='pdf'?'PDF':'画像/GIF'}のURL" style="flex:1;" oninput="editor.updatePreview(this)">
-                                        <button class="t-btn" onclick="editor.openMarkerEditor(this)">📍 マーカー編集</button>
-                                    </div>
-                                    <div class="link-preview"></div>
-                                 </div><input type="hidden" class="markers-input" value="${markersJson}">`;
-                    } else if(b.type === 'video') {
-                        html += `<input type="text" class="edit-area url-input" value="${b.url||''}" placeholder="動画のURL" oninput="editor.updatePreview(this)"><div class="link-preview"></div>`;
-                    } else if(b.type === 'table') {
-                        html += `<div class="table-editor-area"><table class="editable-table"><tbody>`;
-                        const safeData = (b.data || [['','']]).map(row => row.map(cell => cell.replace(/"/g, '&quot;')));
-                        safeData.forEach(row => { html += `<tr>`; row.forEach(cell => { html += `<td><textarea>${cell}</textarea></td>`; }); html += `<td><button onclick="this.closest('tr').remove()">×</button></td></tr>`; });
-                        html += `</tbody></table><button class="t-btn" onclick="editor.addTableRow(this)" style="margin-top:5px; width:100%;">+ 行を追加</button><button class="t-btn" onclick="editor.addTableCol(this)" style="margin-top:5px; width:100%;">+ 列を追加</button></div>`;
-                    } else if(b.type === 'timeline') {
-                        html += `<div class="timeline-editor-list">`;
-                        const safeData = (b.data || [['','']]).map(row => row.map(cell => cell.replace(/"/g, '&quot;')));
-                        safeData.forEach(row => { html += `<div class="tl-edit-row"><i class="fas fa-bars tl-handle"></i><input class="edit-area tl-y-input" value="${row[0]||''}" placeholder="年"><input class="edit-area tl-e-input" value="${row[1]||''}" placeholder="出来事"><button onclick="this.parentElement.remove()" style="margin-left:5px; color:red;">×</button></div>`; });
-                        html += `</div><div style="margin-top:5px; display:flex; gap:5px;"><button class="t-btn" onclick="editor.addTlRow(this)" style="flex:1;">+ 行を追加</button><button class="t-btn" onclick="editor.sortTimeline(this)" style="flex:1; background:#e0f7fa;">古い順に並び替え</button></div>`;
-                    }
-                    html += `<textarea class="edit-area media-desc-input" placeholder="説明文 (任意)" style="height:60px; margin-top:5px;">${b.mediaDesc||''}</textarea>`;
-                }
-                div.innerHTML = html;
-                this.blocksContainer.appendChild(div);
-                
-                // 初期プレビュー表示
-                if(b.type === 'image' || b.type === 'pdf' || b.type === 'video') {
-                    const input = div.querySelector('.url-input');
-                    if(input && input.value) editor.updatePreview(input);
-                }
-                if(b.type === 'timeline') new Sortable(div.querySelector('.timeline-editor-list'), { handle: '.tl-handle', animation: 150 });
-            },
-
-            // --- リンクプレビュー機能 ---
-            updatePreview: function(input) {
-                const container = input.parentElement.querySelector('.link-preview') || input.parentElement.parentElement.querySelector('.link-preview');
-                if(!container) return;
-                const url = input.value;
-                if(!url) { container.innerHTML = ''; return; }
-                
-                // 拡張子などから簡易判定
-                if(url.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
-                    container.innerHTML = `<img src="${url}">`;
-                } else if(url.match(/\.(mp4|webm)$/i)) {
-                    container.innerHTML = `<video src="${url}"></video>`;
-                } else if(url.match(/\.pdf$/i)) {
-                    container.innerHTML = `<div style="text-align:center; padding:10px; font-size:30px; color:red;"><i class="fas fa-file-pdf"></i></div>`;
-                } else if(url.includes('youtube.com') || url.includes('youtu.be')) {
-                    const id = app.getYoutubeId(url);
-                    if(id) container.innerHTML = `<img src="https://img.youtube.com/vi/${id}/hqdefault.jpg">`;
-                } else {
-                    // 不明な場合はアイコン
-                    container.innerHTML = `<div style="text-align:center; padding:10px; font-size:30px; color:#ccc;"><i class="fas fa-image"></i></div>`;
-                }
-            },
-
-            // --- マーカー編集機能 ---
-            openMarkerEditor: function(btn) {
-                const blockDiv = btn.closest('.edit-block-item');
-                const type = blockDiv.dataset.type;
-                const url = blockDiv.querySelector('.url-input').value;
-                if(!url) return alert("先にURLを入力してください");
-                
-                this.currentEditingImgBlock = blockDiv;
-                const markersInput = blockDiv.querySelector('.markers-input');
-                let markers = [];
-                try { markers = JSON.parse(markersInput.value); } catch(e){}
-
-                const b = document.getElementById('modal-body');
-                let mediaHtml = type === 'pdf' ? `<iframe src="${url}" class="pdf-viewer"></iframe>` : `<img src="${url}" style="max-height:80vh; display:block;">`;
-                
-                let html = `<div style="position:relative; display:inline-block; width:100%; height:100%;" id="marker-edit-area" onclick="editor.onAreaClick(event)">${mediaHtml}`;
-                // PDFの場合はiframeの上に透明なカバーを置いてクリックを検知させる簡易実装
-                if(type==='pdf') html += `<div style="position:absolute; top:0; left:0; width:100%; height:100%; cursor:crosshair;"></div>`;
-
-                markers.forEach((m, i) => {
-                    html += `<div class="img-marker m-${m.color}" style="top:${m.y}%; left:${m.x}%;" onclick="editor.editExistingMarker(event, ${i})"></div>`;
-                });
-                html += `</div><div style="position:absolute; bottom:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); color:white; padding:10px; border-radius:5px; pointer-events:none;">クリックで追加 / マーカークリックで編集・削除</div>`;
-                
-                b.innerHTML = html;
-                document.getElementById('media-modal').classList.add('active');
-            },
-
-            onAreaClick: function(e) {
-                if(e.target.classList.contains('img-marker')) return; 
-                const rect = e.currentTarget.getBoundingClientRect();
-                const x = ((e.clientX - rect.left) / rect.width) * 100;
-                const y = ((e.clientY - rect.top) / rect.height) * 100;
-                this.addMarker(x, y);
-            },
-
-            addMarker: function(x, y) {
-                const text = prompt("表示する文字:", "説明");
-                if(text === null) return;
-                const link = prompt("リンク先 (WikiページID または URL):", "");
-                const color = prompt("色 (transparent, black, red, blue, green, yellow):", "red") || "red";
-
-                const markersInput = this.currentEditingImgBlock.querySelector('.markers-input');
-                let markers = JSON.parse(markersInput.value);
-                markers.push({ x, y, text, link, color });
-                markersInput.value = JSON.stringify(markers);
-                
-                // 再描画（モーダルを閉じて開き直す簡易実装）
-                app.closeModal();
-                this.currentEditingImgBlock.querySelector('button[onclick*="openMarkerEditor"]').click();
-            },
-
-            editExistingMarker: function(e, index) {
+    function attachMediaEvents() {
+        const body = document.getElementById('wiki-body');
+        // 画像
+        const imgs = body.querySelectorAll('img');
+        imgs.forEach(img => {
+            img.onclick = (e) => {
+                e.stopPropagation(); // 編集キャレット移動などを防ぐ
+                enterFocusMode(img.cloneNode(true));
+            };
+        });
+        
+        // PDFコンテナ
+        const pdfs = body.querySelectorAll('.pdf-container');
+        pdfs.forEach(pdf => {
+            // PDFコンテナ自体をクリックしたときのみ
+            pdf.onclick = (e) => {
+                 // マーカークリックなどでバブリングした場合も含む
                 e.stopPropagation();
-                const markersInput = this.currentEditingImgBlock.querySelector('.markers-input');
-                let markers = JSON.parse(markersInput.value);
-                const m = markers[index];
+                // クローンを作成するが、イベントリスナーはコピーされないので
+                // スクロール状態などを維持するのは難しいが、ここでは見た目をコピー
+                const clone = pdf.cloneNode(true);
+                // クローン後のスタイル調整（高さを画面に合わせる等）
+                clone.style.height = "80vh"; 
+                clone.style.width = "80vw";
+                enterFocusMode(clone);
+            };
+        });
+    }
 
-                if(confirm("このマーカーを削除しますか？\n（キャンセルで編集）")) {
-                    markers.splice(index, 1);
-                } else {
-                    m.text = prompt("文字:", m.text) || m.text;
-                    m.link = prompt("リンク:", m.link) || m.link;
-                    m.color = prompt("色:", m.color) || m.color;
-                }
-                markersInput.value = JSON.stringify(markers);
-                app.closeModal();
-                this.currentEditingImgBlock.querySelector('button[onclick*="openMarkerEditor"]').click();
-            },
+    function enterFocusMode(element) {
+        const overlay = document.getElementById('focus-overlay');
+        const contentArea = document.getElementById('focus-content-area');
+        
+        contentArea.innerHTML = '';
+        contentArea.appendChild(element);
+        
+        // 初期化
+        currentFocusScale = 1;
+        currentFocusX = 0;
+        currentFocusY = 0;
+        updateFocusTransform();
 
-            // --- 自動リンク機能 ---
-            autoLink: async function() {
-                if(!confirm("Wiki内の全てのページを探して、自動的にリンクを貼りますか？")) return;
-                const snap = await getDocs(query(collection(db, "pages")));
-                const pageIds = [];
-                snap.forEach(d => pageIds.push(d.id));
-                pageIds.sort((a, b) => b.length - a.length);
+        overlay.classList.add('active');
+        
+        // 拡大縮小操作のリスナー
+        window.addEventListener('wheel', handleFocusWheel, { passive: false });
+    }
 
-                const textareas = document.querySelectorAll('.edit-area');
-                let count = 0;
-                textareas.forEach(ta => {
-                    let text = ta.value;
-                    pageIds.forEach(id => {
-                        const regex = new RegExp(`(?<!\\[\\[)(${id})(?!\\]\\])`, 'g');
-                        if(text.match(regex)) { text = text.replace(regex, '[[$1]]'); count++; }
-                    });
-                    ta.value = text;
+    function closeFocus() {
+        const overlay = document.getElementById('focus-overlay');
+        overlay.classList.remove('active');
+        window.removeEventListener('wheel', handleFocusWheel);
+    }
+
+    function handleFocusWheel(e) {
+        if (!e.ctrlKey) return; // Ctrlがない場合は通常のスクロール（PDF内のスクロールなど）を許可したいが…
+
+        e.preventDefault(); // ブラウザ全体のズームを防ぐ
+
+        const delta = e.deltaY * -0.01;
+        const newScale = Math.min(Math.max(0.5, currentFocusScale + delta), 5); // 0.5倍〜5倍制限
+
+        currentFocusScale = newScale;
+        updateFocusTransform();
+    }
+
+    function updateFocusTransform() {
+        const wrapper = document.getElementById('focus-content-area');
+        wrapper.style.transform = `scale(${currentFocusScale})`;
+    }
+
+    // 編集画面でPDF内のスクロールでマーカーがずれないのは、
+    // .pdf-container { position: relative; overflow: auto; }
+    // .pdf-marker { position: absolute; }
+    // の関係により、マーカーは content の子要素ではなく container の子要素だとずれる。
+    // insertPDFDemo関数で .pdf-content (relative) の中にマーカーを入れているので、
+    // コンテンツと一緒にスクロールされます。これで要件は満たせます。
+
+    /* ================= 自動リンク機能 (The Magic) ================= */
+    
+    function runAutoLinker() {
+        if(!confirm('すべてのページに対し、他のページのタイトルが含まれる箇所にリンクを貼ります。\nすでにリンクがある箇所や見出しは除外されます。\n実行しますか？')) return;
+
+        // 1. 全ページのタイトルとサブタイトルを辞書化
+        // { text: "ミッキー", targetId: 1 }, { text: "スタア", targetId: 1 } ...
+        let keywords = [];
+        pages.forEach(p => {
+            // メインタイトル
+            if(p.title) keywords.push({ text: p.title, id: p.id });
+            // サブタイトル
+            if(p.subtitle) {
+                const subs = p.subtitle.split(/,|、/);
+                subs.forEach(s => {
+                    const trimmed = s.trim();
+                    if(trimmed) keywords.push({ text: trimmed, id: p.id });
                 });
-                alert(`${count} 箇所のリンクを作成しました！`);
-            },
+            }
+        });
 
-            // --- Helper ---
-            apply: function(start, end) {
-                const el = activeInput; 
-                if (el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')) {
-                    const s = el.selectionStart; const e = el.selectionEnd; const v = el.value;
-                    el.value = v.substring(0, s) + start + v.substring(s, e) + end + v.substring(e);
-                    el.focus();
+        // 長い単語から先にマッチさせる（例：「東京ディズニーランド」を先に、「東京」を後に）
+        keywords.sort((a, b) => b.text.length - a.text.length);
+
+        // 2. 各ページの中身を走査して置換
+        let updateCount = 0;
+
+        pages.forEach(page => {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = page.content;
+
+            let modified = false;
+
+            // TreeWalkerを使ってテキストノードのみを走査
+            const walker = document.createTreeWalker(
+                tempDiv,
+                NodeFilter.SHOW_TEXT,
+                {
+                    acceptNode: function(node) {
+                        // 親要素が Aタグ, H1-H6, SCRIPT, STYLE 等ならスキップ
+                        const parent = node.parentNode;
+                        const tag = parent.tagName;
+                        if(['A', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'SCRIPT', 'STYLE', 'BUTTON'].includes(tag)) {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        return NodeFilter.FILTER_ACCEPT;
+                    }
                 }
-            },
-            applyLink: function(type) {
-                if(!activeInput) return;
-                const url = prompt(type==='internal' ? "ページID:" : "URL:");
-                if(!url) return;
-                this.apply(type==='internal' ? `[[${url}]]` : `[${url} リンク]`, '');
-            },
-            addTableRow: function(btn) { const tbody = btn.previousElementSibling.querySelector('tbody'); const col = tbody.rows[0]?.cells.length-1||2; const tr = document.createElement('tr'); let h=''; for(let i=0;i<col;i++) h+='<td><textarea></textarea></td>'; h+='<td><button onclick="this.closest(\'tr\').remove()">×</button></td>'; tr.innerHTML=h; tbody.appendChild(tr); },
-            addTableCol: function(btn) { const t = btn.parentElement.querySelector('table'); for(let i=0;i<t.rows.length;i++){ const td=document.createElement('td'); td.innerHTML='<textarea></textarea>'; t.rows[i].insertBefore(td, t.rows[i].lastElementChild); } },
-            addTlRow: function(btn) { const d=document.createElement('div'); d.className='tl-edit-row'; d.innerHTML=`<i class="fas fa-bars tl-handle"></i><input class="edit-area tl-y-input" placeholder="年"><input class="edit-area tl-e-input" placeholder="出来事"><button onclick="this.parentElement.remove()" style="margin-left:5px; color:red;">×</button>`; btn.parentElement.previousElementSibling.appendChild(d); },
-            sortTimeline: function(btn) { const a = btn.parentElement.previousElementSibling; const rows = Array.from(a.querySelectorAll('.tl-edit-row')); rows.sort((x, y) => x.querySelector('.tl-y-input').value.localeCompare(y.querySelector('.tl-y-input').value, undefined, {numeric:true})); rows.forEach(r => a.appendChild(r)); }
-        };
+            );
 
-        app.init();
-    </script>
+            let nodesToReplace = [];
+            while(walker.nextNode()) {
+                nodesToReplace.push(walker.currentNode);
+            }
+
+            // ノードごとにキーワード検索
+            nodesToReplace.forEach(node => {
+                let text = node.nodeValue;
+                let newHtml = text;
+                let hasMatch = false;
+
+                // キーワードループ
+                // 注意: 一度リンクにした箇所を二重リンクしないように制御が必要だが
+                // 簡易実装として、テキスト全体に対してreplaceを行う
+                // ただしHTMLタグを壊さないようにエスケープが必要
+                
+                // 単純な文字列置換だと難しいので、
+                // マッチした箇所を一度ユニークなプレースホルダーにする等の工夫が必要
+                // ここでは一番マッチする長い単語1つだけをリンクにする簡易ロジックを採用するか、
+                // あるいはRegexで一括置換する。
+                
+                // 強力なRegex生成: (Keyword1|Keyword2|...)
+                // エスケープ処理
+                const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                
+                // 自分自身のタイトルにはリンクしない
+                const validKeywords = keywords.filter(k => k.id !== page.id);
+                if(validKeywords.length === 0) return;
+
+                const pattern = new RegExp(`(${validKeywords.map(k => escapeRegExp(k.text)).join('|')})`, 'g');
+
+                if (pattern.test(text)) {
+                    // 置換実行
+                    // マッチしたテキストに対応するIDを見つける必要がある
+                    const replaced = text.replace(pattern, (match) => {
+                        const k = validKeywords.find(vk => vk.text === match);
+                        return `<a href="#wiki-${k.id}" style="color:#0056b3;">${match}</a>`;
+                    });
+                    
+                    // テキストノードをHTML要素（spanなど）に置換
+                    const span = document.createElement('span');
+                    span.innerHTML = replaced;
+                    node.parentNode.replaceChild(span, node);
+                    modified = true;
+                }
+            });
+
+            if(modified) {
+                page.content = tempDiv.innerHTML;
+                updateCount++;
+            }
+        });
+
+        saveData();
+        alert(`${updateCount} ページのリンクを更新しました！`);
+        
+        // 現在開いているページがあればリロード
+        if(currentPageId) {
+            openPage(currentPageId);
+        }
+    }
+
+
+    /* ================= 演出: ミッキーエフェクト & 花火 ================= */
+    
+    function createMickeyEffect() {
+        if(!settings.mickey) return;
+        
+        // 画面中央あたりから出現
+        const m = document.createElement('div');
+        m.className = 'mickey-effect';
+        // ランダムな位置
+        const x = Math.random() * window.innerWidth;
+        const y = window.innerHeight - 50;
+        
+        m.style.left = x + 'px';
+        m.style.top = y + 'px';
+        
+        document.body.appendChild(m);
+        
+        setTimeout(() => m.remove(), 2000);
+    }
+
+    // 花火ロジック（Canvas）
+    const canvas = document.getElementById('fireworks-container');
+    const ctx = canvas.getContext('2d');
+    let fireworks = [];
+    
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function Particle(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 3 + 1;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.life = 100;
+        this.alpha = 1;
+    }
+    
+    Particle.prototype.update = function() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += 0.05; // gravity
+        this.life--;
+        this.alpha = this.life / 100;
+    };
+    
+    Particle.prototype.draw = function(ctx) {
+        ctx.save();
+        ctx.globalAlpha = this.alpha;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    };
+
+    function createFirework() {
+        if(!settings.fireworks) return;
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * (canvas.height / 2);
+        const color = `hsl(${Math.random()*360}, 100%, 50%)`;
+        
+        for(let i=0; i<30; i++) {
+            fireworks.push(new Particle(x, y, color));
+        }
+    }
+
+    function fireworksLoop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        if(settings.fireworks && Math.random() < 0.02) { // 確率で打ち上げ
+            createFirework();
+        }
+
+        for(let i = fireworks.length - 1; i >= 0; i--) {
+            fireworks[i].update();
+            fireworks[i].draw(ctx);
+            if(fireworks[i].life <= 0) {
+                fireworks.splice(i, 1);
+            }
+        }
+        
+        requestAnimationFrame(fireworksLoop);
+    }
+
+</script>
 </body>
 </html>
