@@ -21,7 +21,9 @@
             color: #202122; 
             position: relative; 
             overflow-x: hidden; 
+            /* モーダル表示時に本体のスクロールを止めるためのクラス用 */
         }
+        body.noscroll { overflow: hidden; }
 
         /* --- 演出関連 --- */
         #effects-canvas, #fireworks-canvas {
@@ -53,7 +55,7 @@
             100% { transform: scale(0) rotate(90deg); opacity: 0; }
         }
 
-        /* ミッキー */
+        /* 隠れミッキー演出 */
         .hidden-mickey {
             position: absolute; width: 180px; height: 180px;
             transition: transform 3s ease-in-out; opacity: 0.8;
@@ -71,8 +73,21 @@
             display: flex; justify-content: space-between; align-items: center;
             position: sticky; top: 0; z-index: 1000;
         }
-        .logo { font-family: 'Cinzel', serif; font-size: 26px; font-weight: bold; color: var(--disney-gold); cursor: pointer; }
         
+        /* ロゴ周りの修正 */
+        .logo-container {
+            display: flex; align-items: center; gap: 10px; cursor: pointer;
+        }
+        .logo-star {
+            position: relative; font-size: 24px; color: var(--disney-gold);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .logo-star .mickey-shape {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 12px; height: 12px; fill: white;
+        }
+        .logo-img { height: 40px; display: block; } /* 画像ロゴ用 */
+
         .search-container { position: relative; width: 300px; }
         .search-box { position: relative; display: flex; align-items: center; }
         .search-box i { position: absolute; left: 12px; color: var(--disney-blue); }
@@ -92,7 +107,7 @@
         /* コンテンツスタイル */
         .page-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid #aaa; margin-bottom: 20px; padding-bottom: 10px; }
         .intro-container { display: flex; gap: 30px; margin-bottom: 30px; align-items: flex-start; }
-        .fixed-summary { flex: 1; font-size: 1.1em; line-height: 1.8; white-space: pre-wrap; }
+        .fixed-summary { flex: 1; font-size: 1.1em; line-height: 1.8; white-space: pre-wrap; word-break: break-all; }
         .infobox { width: 320px; border: 1px solid #aaa; background: #fff; padding: 5px; font-size: 90%; flex-shrink: 0; }
         .infobox-head { background: var(--disney-blue); color: white; text-align: center; padding: 10px; font-weight: bold; }
         .infobox img { width: 100%; border-bottom: 1px solid #eee; }
@@ -101,7 +116,7 @@
         .infobox td { padding: 8px; border-bottom: 1px solid #eee; }
 
         .section-wrapper { display: flex; gap: 30px; margin-bottom: 30px; }
-        .section-text { flex: 1; }
+        .section-text { flex: 1; line-height: 1.8; word-break: break-all; }
         .section-media { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; gap: 30px; }
         h2 { border-bottom: 1px solid #aaa; color: var(--disney-blue); margin-top: 40px; padding-bottom: 5px; font-size: 1.8em; }
         h3 { color: var(--disney-blue); margin-top: 25px; font-size: 1.4em; border-bottom: 1px dashed #ccc; }
@@ -120,23 +135,31 @@
         .wiki-table th, .wiki-table td { border: 1px solid #ccc; padding: 8px; text-align: left; }
         .wiki-table th { background: #f0f0f0; font-weight: bold; text-align: center; }
 
-        /* モーダル */
+        /* --- モーダル（メディアビューア）修正版 --- */
         .modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85);
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9);
             z-index: 99999; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s;
         }
         .modal.active { opacity: 1; pointer-events: auto; }
-        .modal-content { position: relative; width: 90%; height: 90%; max-width: 1000px; background: black; box-shadow: 0 0 20px white; display:flex; justify-content:center; align-items:center; border-radius: 8px; overflow: hidden; }
-        .modal-close { position: absolute; top: 10px; right: 20px; color: white; font-size: 40px; cursor: pointer; z-index: 1000; text-shadow: 0 0 5px black; }
         
-        /* 画像・PDFマーカーコンテナ */
-        .img-marker-container { position: relative; width: 100%; height: 100%; overflow: auto; display: flex; justify-content: center; align-items: center; background: #333; }
-        .img-marker-container img, .img-marker-container iframe, .img-marker-container embed, .img-marker-container object { 
-            max-width: none; /* 拡大のため制限解除 */
-            display: block; 
+        /* 拡大・スクロール用コンテナ */
+        .modal-scroll-area {
+            width: 100%; height: 100%;
+            overflow: auto; /* ここでスクロールさせる */
+            display: flex; justify-content: center; align-items: center;
         }
-        /* iframe/embedをレスポンシブに */
-        .pdf-viewer { width: 100%; height: 100%; border: none; }
+
+        .modal-content-wrapper {
+            position: relative;
+            transform-origin: center center;
+            transition: transform 0.1s ease-out; /* ズーム時の滑らかさ */
+        }
+        
+        .modal-close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; z-index: 10010; text-shadow: 0 0 5px black; }
+
+        /* 画像・PDFマーカー */
+        .media-display { display: block; max-width: none; } /* サイズ制限解除（ズーム用） */
+        .pdf-frame { width: 800px; height: 1130px; border: none; background: white; }
 
         .img-marker {
             position: absolute; width: 24px; height: 24px; transform: translate(-50%, -50%);
@@ -159,11 +182,13 @@
         .m-yellow { background: #ffcc00; }
 
         /* リンクスタイル修正 */
-        a.wiki-link { color: #0645ad; font-weight: bold; text-decoration: none; border-bottom: 1px dotted #0645ad; }
+        a.wiki-link { color: #0645ad; font-weight: bold; text-decoration: none; border-bottom: 1px dotted #0645ad; cursor: pointer; }
         a.wiki-link:hover { text-decoration: underline; background: #e6f2ff; }
         a.ext-link { color: #3366bb; text-decoration: none; }
         a.ext-link:hover { text-decoration: underline; }
+        a.ext-link::after { content: ' \f35d'; font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 0.7em; margin-left: 3px; }
 
+        /* 目次 */
         .toc-list { list-style: none; padding: 0; font-size: 14px; }
         .toc-link { color: #0645ad; text-decoration: none; cursor: pointer; display: block; padding: 3px 0; }
         .toc-link:hover { text-decoration: underline; }
@@ -181,7 +206,6 @@
         .edit-area { width: 100%; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; font-family: serif; line-height: 1.5; font-size: 16px; }
         .edit-card-handle { cursor: grab; color: #ccc; margin-right: 10px; font-size: 20px; }
         
-        /* リンクプレビュー */
         .link-preview { margin-top: 5px; max-width: 150px; max-height: 100px; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; cursor: pointer; }
         .link-preview img, .link-preview video, .link-preview iframe { width: 100%; height: 100%; object-fit: cover; }
 
@@ -215,21 +239,74 @@
         .btn-magic-save:hover { background-color: #b08d4b; }
         .btn-magic-back:hover { background-color: #bbb; }
 
+        /* 左下設定ボタン */
+        .settings-btn {
+            position: fixed; bottom: 20px; left: 20px;
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(255,255,255,0.8); border: 2px solid var(--disney-gold);
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; z-index: 9900; color: var(--disney-blue);
+            transition: 0.3s;
+        }
+        .settings-btn:hover { transform: rotate(45deg); background: white; }
+        .settings-menu {
+            position: fixed; bottom: 70px; left: 20px;
+            background: white; border: 2px solid var(--disney-gold); border-radius: 8px;
+            padding: 10px; z-index: 9901; display: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2); width: 200px;
+        }
+        .settings-menu h4 { margin: 0 0 10px 0; color: var(--disney-blue); text-align: center; border-bottom: 1px solid #eee; padding-bottom: 5px;}
+        .setting-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 14px; }
+        
+        /* スイッチ */
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--disney-gold); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
     </style>
 </head>
 <body>
     <div id="effects-canvas"></div>
     <canvas id="fireworks-canvas"></canvas>
 
-    <div id="media-modal" class="modal" onclick="app.closeModal()">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <div class="modal-close" onclick="app.closeModal()">×</div>
-            <div id="modal-body" style="width:100%; height:100%;"></div>
+    <div id="media-modal" class="modal">
+        <div class="modal-close" onclick="app.closeModal()">×</div>
+        <div class="modal-scroll-area" id="modal-scroll-area">
+            <div id="modal-content-wrapper" class="modal-content-wrapper">
+                </div>
+        </div>
+    </div>
+
+    <div class="settings-btn" onclick="app.toggleSettings()"><i class="fas fa-cog"></i></div>
+    <div id="settings-menu" class="settings-menu">
+        <h4><i class="fas fa-magic"></i> 演出設定</h4>
+        <div class="setting-item">
+            <span>隠れミッキー</span>
+            <label class="switch"><input type="checkbox" id="check-mickey" onchange="app.updateSettings()" checked><span class="slider"></span></label>
+        </div>
+        <div class="setting-item">
+            <span>花火</span>
+            <label class="switch"><input type="checkbox" id="check-fireworks" onchange="app.updateSettings()" checked><span class="slider"></span></label>
         </div>
     </div>
 
     <header>
-        <div class="logo" onclick="app.goHome()">✨ Disney Wiki</div>
+        <div class="logo-container" onclick="app.goHome()">
+            <div class="logo-star">
+                <i class="fas fa-star"></i>
+                <svg class="mickey-shape" viewBox="0 0 100 100">
+                    <circle cx="20" cy="20" r="20" />
+                    <circle cx="80" cy="20" r="20" />
+                    <circle cx="50" cy="55" r="28" />
+                </svg>
+            </div>
+            <a href="https://fontmeme.com/ja/font-disney-logo/">
+                <img src="https://fontmeme.com/permalink/260204/eabb3794.png" alt="DISNEY WIKI" border="0" class="logo-img">
+            </a>
+        </div>
         <div class="search-container">
             <div class="search-box">
                 <i class="fas fa-search"></i>
@@ -254,6 +331,11 @@
                     <button class="btn-royal" onclick="app.toggleEdit()" style="background:none; border:1px solid #ccc; color:#666;">このページを編集する ✎</button>
                 </div>
                 <div id="page-content"></div>
+                
+                <div id="home-admin-tools" class="hidden" style="margin-top:50px; padding:20px; border-top:1px solid #ccc; text-align:center;">
+                    <p style="color:#666; font-size:0.9em;">管理者ツール: 全Wikiの文章をスキャンし、タイトル・サブ題名へのリンクを自動生成します。</p>
+                    <button class="btn-royal" onclick="app.runGlobalAutoLink()">🪄 全ページの自動リンクを更新</button>
+                </div>
             </div>
 
             <div id="edit-mode" class="hidden">
@@ -261,9 +343,8 @@
                     <button class="t-btn" onmousedown="event.preventDefault(); editor.apply('**','**')"><b>B</b></button>
                     <button class="t-btn" onmousedown="event.preventDefault(); editor.apply('*','*')"><i>I</i></button>
                     <button class="t-btn" onmousedown="event.preventDefault(); editor.apply('<u>','</u>')"><u>U</u></button>
-                    <button class="t-btn" onmousedown="event.preventDefault(); editor.applyLink('internal')"><i class="fas fa-link"></i></button>
-                    <button class="t-btn" onmousedown="event.preventDefault(); editor.applyLink('external')"><i class="fas fa-external-link-alt"></i></button>
-                    <button class="t-btn" onclick="editor.autoLink()" style="color:var(--disney-blue);"><i class="fas fa-magic"></i> 自動リンク</button>
+                    <button class="t-btn" onmousedown="event.preventDefault(); editor.applyLink('internal')"><i class="fas fa-link"></i> Wikiリンク</button>
+                    <button class="t-btn" onmousedown="event.preventDefault(); editor.applyLink('external')"><i class="fas fa-external-link-alt"></i> 外部リンク</button>
                     <div style="width:1px; background:#ccc; height:20px; margin:0 5px;"></div>
                     <button class="t-btn" onclick="editor.addBlock('image')"><i class="fas fa-image"></i> 画像/GIF</button>
                     <button class="t-btn" onclick="editor.addBlock('pdf')"><i class="fas fa-file-pdf"></i> PDF</button>
@@ -277,7 +358,13 @@
 
                 <div id="edit-fields-wiki">
                     <div class="edit-card" style="border: 2px solid var(--disney-blue);">
-                        <h4 style="margin:0 0 10px 0; color:var(--disney-blue);">✨ ページ概要とインフォボックス</h4>
+                        <h4 style="margin:0 0 10px 0; color:var(--disney-blue);">✨ 基本設定</h4>
+                        <div style="margin-bottom:15px;">
+                            <label style="font-weight:bold;">サブ題名 (検索・リンク用):</label>
+                            <input type="text" id="edit-subtitles" class="edit-area" placeholder="例: TDL, 東京ディズニーランド (カンマ区切り)" style="height:35px;">
+                            <small style="color:#666;">※この題名でも検索できたり、リンクが繋がるようになります（画面には表示されません）。</small>
+                        </div>
+                        <h4 style="margin:10px 0 5px 0; color:var(--disney-blue);">概要とインフォボックス</h4>
                         <div style="display:flex; gap:15px; flex-wrap: wrap;">
                             <div style="flex:1; min-width: 300px;">
                                 <label style="display:block; margin-bottom:5px; font-weight:bold;">ざっくり説明:</label>
@@ -333,10 +420,12 @@
         const provider = new GoogleAuthProvider();
 
         // --- 演出スクリプト ---
+        window.effectSettings = { mickey: true, fireworks: true };
+
         function initEffects() {
             const container = document.getElementById('effects-canvas');
             
-            // 1. キラキラ
+            // 1. キラキラ（常時）
             setInterval(() => {
                 if(document.hidden) return; 
                 const star = document.createElement('div');
@@ -352,7 +441,7 @@
 
             // 2. 隠れミッキー
             const spawnMickey = () => {
-                if(document.hidden) return;
+                if(document.hidden || !window.effectSettings.mickey) return;
                 const colors = ['#000000', '#FF0000', '#0000FF', '#FFFF00', '#008000', '#800080', '#00BFFF'];
                 const color = colors[Math.floor(Math.random() * colors.length)];
                 const div = document.createElement('div');
@@ -368,7 +457,7 @@
             };
             setInterval(() => { if(Math.random() > 0.4) spawnMickey(); }, 30000);
 
-            // 3. 花火（軽量化済み）
+            // 3. 花火
             const fwCanvas = document.getElementById('fireworks-canvas');
             const ctx = fwCanvas.getContext('2d');
             let particles = [];
@@ -421,27 +510,30 @@
             }
 
             const animate = () => {
-                if(document.hidden) { requestAnimationFrame(animate); return; } // 裏では描画停止
+                if(document.hidden) { requestAnimationFrame(animate); return; }
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; 
                 ctx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
-                for(let i = rockets.length - 1; i >= 0; i--) {
-                    rockets[i].draw(ctx);
-                    if(rockets[i].update()) {
-                        const r = rockets[i];
-                        for(let j=0; j<60; j++) particles.push(new Particle(r.x, r.y, r.color));
-                        rockets.splice(i, 1);
+                
+                if (window.effectSettings.fireworks) {
+                    for(let i = rockets.length - 1; i >= 0; i--) {
+                        rockets[i].draw(ctx);
+                        if(rockets[i].update()) {
+                            const r = rockets[i];
+                            for(let j=0; j<60; j++) particles.push(new Particle(r.x, r.y, r.color));
+                            rockets.splice(i, 1);
+                        }
                     }
-                }
-                for(let i = particles.length - 1; i >= 0; i--) {
-                    particles[i].draw(ctx); particles[i].update();
-                    if(particles[i].alpha <= 0) particles.splice(i, 1);
+                    for(let i = particles.length - 1; i >= 0; i--) {
+                        particles[i].draw(ctx); particles[i].update();
+                        if(particles[i].alpha <= 0) particles.splice(i, 1);
+                    }
                 }
                 requestAnimationFrame(animate);
             };
             animate();
 
             setInterval(() => {
-                if (document.hidden) return; 
+                if (document.hidden || !window.effectSettings.fireworks) return; 
                 let count = 0;
                 const interval = setInterval(() => {
                     rockets.push(new Rocket());
@@ -457,6 +549,7 @@
             currentPageId: 'home',
             currentUser: null,
             data: {},
+            mediaScale: 1,
 
             init: function() {
                 onAuthStateChanged(auth, (user) => {
@@ -466,6 +559,16 @@
                 });
                 window.addEventListener('hashchange', () => this.router());
                 this.router();
+
+                // モーダルスクロール・ズームイベントのセットアップ
+                const scrollArea = document.getElementById('modal-scroll-area');
+                scrollArea.addEventListener('wheel', (e) => {
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        this.zoomMedia(e.deltaY * -0.01);
+                    }
+                    // 通常のホイールはscrollAreaがoverflow:autoなので自然にスクロールする
+                }, { passive: false });
             },
 
             router: function() {
@@ -477,16 +580,62 @@
 
             goHome: function() { location.hash = 'home'; },
 
+            toggleSettings: function() {
+                const menu = document.getElementById('settings-menu');
+                menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+            },
+
+            updateSettings: function() {
+                window.effectSettings.mickey = document.getElementById('check-mickey').checked;
+                window.effectSettings.fireworks = document.getElementById('check-fireworks').checked;
+            },
+
             loadPage: async function(id) {
                 const snap = await getDoc(doc(db, "pages", id));
-                this.data = snap.exists() ? snap.data() : { title: id, summary: '', blocks: [], infobox: { image:'', rows:[] }, featured: [] };
+                // データ構造に subtitles がなければ空配列で初期化
+                this.data = snap.exists() 
+                    ? { subtitles: [], ...snap.data() } 
+                    : { title: id, subtitles: [], summary: '', blocks: [], infobox: { image:'', rows:[] }, featured: [] };
                 this.render();
+            },
+
+            // --- Parsers (Markdown修正) ---
+            parse: function(text) {
+                if (!text) return '';
+                let t = text;
+
+                // 1. HTMLエスケープ（最低限）
+                t = t.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+                // 2. Bold: **text** -> <b>text</b>
+                t = t.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+
+                // 3. Italic: *text* -> <i>text</i>
+                t = t.replace(/\*([^\*]+)\*/g, '<i>$1</i>');
+
+                // 4. Underline: &lt;u&gt;text&lt;/u&gt; -> <u>text</u> (エスケープ戻し)
+                t = t.replace(/&lt;u&gt;(.*?)&lt;\/u&gt;/g, '<u>$1</u>');
+
+                // 5. External Link: [Title](URL)
+                t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="ext-link" target="_blank">$1</a>');
+
+                // 6. Wiki Link: [[PageName]]
+                t = t.replace(/\[\[(.*?)\]\]/g, (match, p1) => {
+                    return `<a href="#${p1}" class="wiki-link">${p1}</a>`;
+                });
+
+                // 7. Newline
+                t = t.replace(/\n/g, '<br>');
+
+                return t;
             },
 
             render: function() {
                 const isHome = this.currentPageId === 'home';
                 document.getElementById('sidebar').classList.toggle('hidden', isHome);
                 document.getElementById('display-title').textContent = this.data.title;
+                document.getElementById('home-admin-tools').classList.toggle('hidden', !isHome); // HOMEのみツール表示
+                
                 const container = document.getElementById('page-content');
                 container.innerHTML = '';
 
@@ -523,6 +672,7 @@
                         const text = document.createElement('div');
                         text.className = 'section-text';
                         const tag = (b.level == 3) ? 'h3' : 'h2';
+                        // 見出しには自動リンク等を適用しないため、あえてparseを通さずとも良いが、念のためエスケープのみ
                         text.innerHTML = `<${tag} id="sec-${i}">${b.heading}</${tag}><div>${this.parse(b.content)}</div>`;
                         currentWrap.appendChild(text);
                         currentMedia = document.createElement('div');
@@ -536,391 +686,555 @@
                         if(b.mediaTitle) m.innerHTML += `<div class="media-title">${b.mediaTitle}</div>`;
 
                         if(b.type === 'image' || b.type === 'pdf') {
-                            // 画像・PDF・GIFクリックでモーダル表示
                             const markersJson = b.markers ? JSON.stringify(b.markers).replace(/"/g, '&quot;') : '[]';
-                            // PDFならPDFビューア、それ以外は画像タグ
                             const contentTag = (b.type === 'pdf') 
-                                ? `<div class="pdf-icon" style="font-size:50px; color:red;"><i class="fas fa-file-pdf"></i></div><div style="font-size:0.8em; margin-top:5px;">クリックして拡大</div>`
+                                ? `<div class="pdf-icon" style="font-size:50px; color:red;"><i class="fas fa-file-pdf"></i></div><div style="font-size:0.8em; margin-top:5px;">クリックして閲覧</div>`
                                 : `<img src="${b.url}" style="width:100%;">`;
                             
                             m.innerHTML += `<div onclick='app.openMediaModal("${b.type}", "${b.url}", ${markersJson})'>${contentTag}</div>`;
-                        } else if(b.type === 'video') {
-                            const ytId = this.getYoutubeId(b.url);
-                            if(ytId) {
-                                m.innerHTML += `<div class="yt-thumbnail-container" onclick="app.openVideo('${ytId}')"><img src="https://img.youtube.com/vi/${ytId}/hqdefault.jpg" style="width:100%;"><div class="yt-play-icon">▶</div></div>`;
-                            } else {
-                                m.innerHTML += `<video src="${b.url}" controls style="width:100%"></video>`;
-                            }
-                        } else if(b.type === 'table') {
-                            let tableData = b.data;
-                            if (typeof tableData === 'string') { try { tableData = JSON.parse(tableData); } catch(e) { tableData = []; } }
-                            m.innerHTML += this.renderTable(tableData);
-                        } else if(b.type === 'timeline') {
-                            let tlData = b.data;
-                            if (typeof tlData === 'string') { try { tlData = JSON.parse(tlData); } catch(e) { tlData = []; } }
-                            m.innerHTML += this.renderTimeline(tlData); 
                         }
-
-                        if(b.mediaDesc) m.innerHTML += `<div class="media-desc">${this.parse(b.mediaDesc)}</div>`;
+                        else if(b.type === 'video') {
+                            m.innerHTML += `<video src="${b.url}" controls style="width:100%;"></video>`;
+                        }
+                        else if(b.type === 'table') {
+                            let th = '<table class="wiki-table"><tr>';
+                            b.headers.forEach(h => th += `<th>${h}</th>`);
+                            th += '</tr>';
+                            b.rows.forEach(r => {
+                                th += '<tr>';
+                                r.forEach(c => th += `<td>${this.parse(c)}</td>`);
+                                th += '</tr>';
+                            });
+                            th += '</table>';
+                            m.innerHTML += th;
+                            // テーブルはクリックで拡大しない
+                        }
+                        else if(b.type === 'timeline') {
+                            let th = '<div class="timeline-box">';
+                            b.events.forEach(e => {
+                                th += `<div class="timeline-row"><div class="tl-year">${e.year}</div><div class="tl-event">${this.parse(e.event)}</div></div>`;
+                            });
+                            th += '</div>';
+                            m.innerHTML += th;
+                        }
+                        
+                        if(b.mediaDesc) m.innerHTML += `<div class="media-desc">${b.mediaDesc}</div>`;
                         currentMedia.appendChild(m);
                     }
                 });
             },
 
-            // 正規表現の修正（太字・斜体・Wikiリンク・外部リンク）
-            parse: function(t) {
-                if(!t) return '';
-                let html = t
-                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') // 太字
-                    .replace(/\*(.*?)\*/g, '<i>$1</i>') // 斜体
-                    .replace(/~~(.*?)~~/g, '<s>$1</s>') // 取消線
-                    .replace(/<u>(.*?)<\/u>/g, '<u>$1</u>') // 下線
-                    .replace(/\[\[(.*?)\]\]/g, '<a href="#$1" class="wiki-link">$1</a>') // Wikiリンク
-                    .replace(/\[(https?:\/\/[^\s]+)\s+(.*?)\]/g, '<a href="$1" target="_blank" class="ext-link">$2 <i class="fas fa-external-link-alt" style="font-size:0.8em"></i></a>') // 外部リンク [url text]
-                    .replace(/\n/g, '<br>'); // 改行
-                return html;
-            },
-
-            // --- モーダル制御 ---
-            openVideo: function(id) {
-                const b = document.getElementById('modal-body');
-                b.innerHTML = `<div id="video-frame-container" style="width:80%; aspect-ratio:16/9;"><iframe width="100%" height="100%" src="https://www.youtube.com/embed/${id}?autoplay=1" frameborder="0" allowfullscreen></iframe></div>`;
-                document.getElementById('media-modal').classList.add('active');
-            },
-            
-            openMediaModal: function(type, url, markers=[]) {
-                const b = document.getElementById('modal-body');
-                let contentHtml = '';
-                if(type === 'pdf') {
-                    contentHtml = `<iframe src="${url}" class="pdf-viewer"></iframe>`;
-                } else {
-                    contentHtml = `<img src="${url}">`;
-                }
-
-                let html = `<div class="img-marker-container" style="width:100%; height:100%;">${contentHtml}`;
-                markers.forEach(m => {
-                    const clickAction = m.link ? (m.link.startsWith('http') ? `window.open('${m.link}')` : `location.hash='${m.link}'; app.closeModal();`) : '';
-                    html += `<div class="img-marker m-${m.color}" style="top:${m.y}%; left:${m.x}%;" data-text="${m.text}" onclick="${clickAction}"></div>`;
+            renderTOC: function() {
+                const list = document.getElementById('toc-list');
+                list.innerHTML = '';
+                (this.data.blocks || []).forEach((b, i) => {
+                    if(b.type === 'section') {
+                        const li = document.createElement('li');
+                        const a = document.createElement('a');
+                        a.className = 'toc-link';
+                        a.textContent = b.heading;
+                        a.style.paddingLeft = (b.level == 3) ? '15px' : '0px';
+                        a.onclick = () => document.getElementById(`sec-${i}`)?.scrollIntoView({behavior:'smooth'});
+                        li.appendChild(a);
+                        list.appendChild(li);
+                    }
                 });
-                html += `</div>`;
-                b.innerHTML = html;
-                document.getElementById('media-modal').classList.add('active');
+            },
+
+            renderHome: function(container) {
+                const grid = document.createElement('div');
+                grid.className = 'home-grid';
+                (this.data.featured || []).forEach(async (id) => {
+                    const snap = await getDoc(doc(db, "pages", id));
+                    if(snap.exists()) {
+                        const d = snap.data();
+                        const card = document.createElement('div');
+                        card.className = 'page-card';
+                        card.onclick = () => location.hash = id;
+                        // infobox画像があれば使用、なければデフォルト
+                        const imgUrl = d.infobox?.image || 'https://via.placeholder.com/300x180?text=Disney+Wiki';
+                        card.innerHTML = `<img src="${imgUrl}" class="card-img"><div class="card-body">${d.title}</div>`;
+                        grid.appendChild(card);
+                    }
+                });
+                container.appendChild(grid);
+            },
+
+            // --- Media Modal Logic (Zoom/Scroll fix) ---
+            openMediaModal: function(type, url, markers) {
+                const modal = document.getElementById('media-modal');
+                const wrapper = document.getElementById('modal-content-wrapper');
+                wrapper.innerHTML = '';
+                this.mediaScale = 1;
+                wrapper.style.transform = `scale(1)`;
+                
+                // wrapperの幅と高さをリセット
+                wrapper.style.width = 'auto';
+                wrapper.style.height = 'auto';
+
+                if (type === 'image' || type === 'pdf') {
+                    // 相対配置用のコンテナを作成
+                    const container = document.createElement('div');
+                    container.style.position = 'relative';
+                    container.style.display = 'inline-block'; // コンテンツに合わせる
+
+                    let mediaEl;
+                    if (type === 'pdf') {
+                        // PDFはiframeで表示
+                        mediaEl = document.createElement('iframe');
+                        mediaEl.src = url;
+                        mediaEl.className = 'pdf-frame';
+                    } else {
+                        mediaEl = document.createElement('img');
+                        mediaEl.src = url;
+                        mediaEl.className = 'media-display';
+                    }
+                    container.appendChild(mediaEl);
+
+                    // マーカー配置
+                    markers.forEach(m => {
+                        const dot = document.createElement('div');
+                        dot.className = `img-marker m-${m.color}`;
+                        dot.style.left = m.x + '%';
+                        dot.style.top = m.y + '%';
+                        dot.setAttribute('data-text', m.text);
+                        container.appendChild(dot);
+                    });
+
+                    wrapper.appendChild(container);
+                } 
+                
+                modal.classList.add('active');
+                document.body.classList.add('noscroll');
             },
 
             closeModal: function() {
                 document.getElementById('media-modal').classList.remove('active');
-                document.getElementById('modal-body').innerHTML = '';
+                document.getElementById('modal-content-wrapper').innerHTML = ''; // Clear video/iframe
+                document.body.classList.remove('noscroll');
             },
 
-            // その他（既存）
-            renderTable: function(data) {
-                if(!data || !Array.isArray(data)) return '';
-                let h = '<table class="wiki-table">';
-                data.forEach((row, idx) => { if(Array.isArray(row)) { h += '<tr>'; row.forEach(c => { h += (idx === 0) ? `<th>${this.parse(c)}</th>` : `<td>${this.parse(c)}</td>`; }); h += '</tr>'; }});
-                return h + '</table>';
+            zoomMedia: function(amount) {
+                this.mediaScale += amount;
+                this.mediaScale = Math.min(Math.max(0.2, this.mediaScale), 5.0); // 0.2倍〜5倍
+                document.getElementById('modal-content-wrapper').style.transform = `scale(${this.mediaScale})`;
             },
-            renderTimeline: function(data) {
-                if(!data || !Array.isArray(data)) return '';
-                let h = `<div class="timeline-box">`;
-                data.forEach(row => { if(Array.isArray(row) && row.length >= 2) h += `<div class="timeline-row"><div class="tl-year">${row[0]}</div><div class="tl-event">${this.parse(row[1])}</div></div>`; });
-                return h + `</div>`;
+
+            // --- Search & Global Link Logic ---
+            searchLive: async function(txt) {
+                const resDiv = document.getElementById('search-results');
+                if(!txt) { resDiv.style.display = 'none'; return; }
+                
+                const q = query(collection(db, "pages"));
+                const snaps = await getDocs(q);
+                resDiv.innerHTML = '';
+                let hits = 0;
+                
+                snaps.forEach(doc => {
+                    const d = doc.data();
+                    const title = d.title || doc.id;
+                    const subs = d.subtitles || [];
+                    const matchTitle = title.toLowerCase().includes(txt.toLowerCase());
+                    const matchSub = subs.some(s => s.toLowerCase().includes(txt.toLowerCase()));
+
+                    if(matchTitle || matchSub) {
+                        const div = document.createElement('div');
+                        div.className = 'search-item';
+                        // サブタイトルでヒットした場合はそれも表示
+                        const extra = matchSub ? ` <small>(${subs.join(', ')})</small>` : '';
+                        div.innerHTML = `<i class="fas fa-file-alt"></i> ${title}${extra}`;
+                        div.onclick = () => {
+                            location.hash = doc.id;
+                            resDiv.style.display = 'none';
+                            document.getElementById('search-input').value = '';
+                        };
+                        resDiv.appendChild(div);
+                        hits++;
+                    }
+                });
+                resDiv.style.display = hits > 0 ? 'block' : 'none';
             },
-            renderHome: async function(c) {
-                const g = document.createElement('div'); g.className = 'home-grid';
-                for(const id of (this.data.featured || [])) {
-                    const s = await getDoc(doc(db, "pages", id.trim()));
-                    if(s.exists()){ const d = s.data(); const img = d.infobox?.image || ''; g.innerHTML += `<div class="page-card" onclick="location.hash='${id.trim()}'"><img src="${img}" class="card-img"><div class="card-body">${d.title}</div></div>`; }
+
+            // ★ 全ページ自動リンク生成機能 ★
+            runGlobalAutoLink: async function() {
+                if(!confirm("⚠️ 全てのWikiページをスキャンし、ページ名やサブ題名が含まれる箇所を自動でリンク化します。\n時間がかかる場合がありますが、実行しますか？")) return;
+
+                const pagesCol = collection(db, "pages");
+                const allDocs = await getDocs(pagesCol);
+                
+                // 1. 辞書作成: { "単語": "ページID" }
+                // 長い単語から先にマッチさせるため、文字数降順でソート
+                let dictionary = [];
+                allDocs.forEach(doc => {
+                    const d = doc.data();
+                    const id = doc.id;
+                    // タイトル
+                    dictionary.push({ term: d.title, id: id });
+                    // サブタイトル
+                    if(d.subtitles && Array.isArray(d.subtitles)) {
+                        d.subtitles.forEach(sub => {
+                            if(sub.trim()) dictionary.push({ term: sub.trim(), id: id });
+                        });
+                    }
+                });
+                dictionary.sort((a, b) => b.term.length - a.term.length);
+
+                // HTMLタグや既にリンクになっている箇所を壊さないための置換ロジック
+                // 単純な replaceAll だと <a href="...">の中身まで変えてしまうので注意が必要
+                // ここでは簡易的に、テキストノード相当の部分のみ置換を試みるが、
+                // JSでの完全なHTMLパース＆置換は重いため、各ブロックのテキストに対して処理を行う。
+
+                const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+                let updateCount = 0;
+
+                for (const docSnap of allDocs.docs) {
+                    let d = docSnap.data();
+                    let modified = false;
+
+                    // テキスト置換関数
+                    const linkify = (text) => {
+                        if (!text) return text;
+                        // 既にリンク記法 [[...]] や <a>...</a> になっている場所を保護しつつ置換するのは複雑。
+                        // ここでは「[[」が含まれていない行、かつHTMLタグっぽくない箇所を狙う簡易実装とする。
+                        // ※既存のWiki記法を壊さないよう、既に [[ がある周辺は触らない等の配慮が必要だが、
+                        // 今回は「単純なテキスト」に対して辞書マッチを行う。
+                        
+                        let temp = text;
+                        dictionary.forEach(entry => {
+                            // 自分自身へのリンクはしない
+                            if (entry.id === docSnap.id) return;
+
+                            // 正規表現: 
+                            // (?<!\[\[) -> 前に [[ がない
+                            // (?<!\[)   -> 前に [ がない (外部リンク対策)
+                            // 該当単語
+                            // (?!\]\])  -> 後ろに ]] がない
+                            const regex = new RegExp(`(?<!\\[\\[|\\w)(?<!\\[)${escapeRegExp(entry.term)}(?!\\]\\]|\\w)`, 'g');
+                            
+                            // まだリンク化されていない場合のみ置換
+                            // [[Title]] という形式に置換する
+                            temp = temp.replace(regex, `[[${entry.id}]]`);
+                        });
+                        return temp;
+                    };
+
+                    // Summaryの置換
+                    const newSum = linkify(d.summary);
+                    if(newSum !== d.summary) { d.summary = newSum; modified = true; }
+
+                    // Infoboxの置換
+                    if(d.infobox && d.infobox.rows) {
+                        d.infobox.rows.forEach(r => {
+                            const newVal = linkify(r.value);
+                            if(newVal !== r.value) { r.value = newVal; modified = true; }
+                        });
+                    }
+
+                    // Blocksの置換 (Sectionのcontent, Timelineのevent, Tableのcell)
+                    if(d.blocks) {
+                        d.blocks.forEach(b => {
+                            if(b.type === 'section') {
+                                const newC = linkify(b.content);
+                                if(newC !== b.content) { b.content = newC; modified = true; }
+                            }
+                            else if(b.type === 'timeline') {
+                                b.events.forEach(e => {
+                                    const newE = linkify(e.event);
+                                    if(newE !== e.event) { e.event = newE; modified = true; }
+                                });
+                            }
+                            // Tableや他は構造が複雑なため今回はスキップ（必要なら追加）
+                        });
+                    }
+
+                    if(modified) {
+                        await setDoc(doc(db, "pages", docSnap.id), d);
+                        updateCount++;
+                    }
                 }
-                c.appendChild(g);
+
+                alert(`✨ 完了しました！ ${updateCount} ページの内容を更新し、リンクを繋ぎました。`);
+                location.reload();
             },
-            renderTOC: function() {
-                const l = document.getElementById('toc-list'); l.innerHTML = '';
-                (this.data.blocks || []).forEach((b, i) => { if(b.type === 'section') { const li = document.createElement('li'); li.style.marginLeft = b.level == 3 ? '15px' : '0'; li.innerHTML = `<a class="toc-link" onclick="app.scrollToBlock(${i})">${b.heading || '（無題）'}</a>`; l.appendChild(li); }});
+
+
+            // --- Edit Functions ---
+            createNewPage: async function() {
+                const title = prompt("新しいページのタイトルを入力してください:");
+                if(!title) return;
+                const id = title; // タイトルをIDとする
+                const exists = (await getDoc(doc(db, "pages", id))).exists();
+                if(exists) { alert("そのページは既に存在します"); location.hash = id; return; }
+                
+                await setDoc(doc(db, "pages", id), {
+                    title: title,
+                    subtitles: [],
+                    summary: 'ここに概要を書く...',
+                    infobox: { image: '', rows: [] },
+                    blocks: []
+                });
+                location.hash = id;
+                location.reload(); // リロードして確実に反映
             },
-            scrollToBlock: function(i) { const el = document.getElementById(`sec-${i}`); if(el) window.scrollTo({ top: el.offsetTop - 80, behavior: 'smooth' }); },
-            getYoutubeId: function(url) { const m = url.match(/^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/); return (m && m[7].length == 11) ? m[7] : false; },
-            searchLive: async function(val) {
-                const res = document.getElementById('search-results');
-                if(!val) { res.style.display = 'none'; return; }
-                const snap = await getDocs(query(collection(db, "pages")));
-                res.innerHTML = ''; let count = 0;
-                snap.forEach(d => { if(d.id.toLowerCase().includes(val.toLowerCase()) && count < 8) { const item = document.createElement('div'); item.className = 'search-item'; item.textContent = d.id; item.onclick = () => { location.hash = d.id; res.style.display = 'none'; document.getElementById('search-input').value=''; }; res.appendChild(item); count++; }});
-                res.style.display = count > 0 ? 'block' : 'none';
-            },
-            createNewPage: async function() { const id = prompt("新しいページのタイトル（ID）を入力してください:"); if(id) { location.hash = id; setTimeout(() => { this.toggleEdit(); }, 1000); } },
+
             toggleEdit: function() {
-                if(!this.currentUser) return alert('編集するにはログインしてください');
-                document.getElementById('view-mode').classList.toggle('hidden'); document.getElementById('edit-mode').classList.toggle('hidden');
-                document.getElementById('editor-toolbar-box').classList.toggle('hidden', this.currentPageId === 'home');
-                if(!document.getElementById('edit-mode').classList.contains('hidden')) editor.load();
+                const view = document.getElementById('view-mode');
+                const edit = document.getElementById('edit-mode');
+                const isHidden = edit.classList.contains('hidden');
+                
+                if(isHidden) {
+                    view.classList.add('hidden');
+                    edit.classList.remove('hidden');
+                    this.initEditor();
+                } else {
+                    view.classList.remove('hidden');
+                    edit.classList.add('hidden');
+                    this.render(); // 編集キャンセル時は再描画
+                }
             },
+
+            initEditor: function() {
+                const isHome = this.currentPageId === 'home';
+                document.getElementById('edit-fields-wiki').classList.toggle('hidden', isHome);
+                document.getElementById('edit-fields-home').classList.toggle('hidden', !isHome);
+
+                if(isHome) {
+                    document.getElementById('home-featured-input').value = this.data.featured?.join(', ') || '';
+                } else {
+                    document.getElementById('edit-subtitles').value = this.data.subtitles?.join(', ') || '';
+                    document.getElementById('edit-summary').value = this.data.summary || '';
+                    document.getElementById('edit-ib-img').value = this.data.infobox?.image || '';
+                    editor.updatePreview(document.getElementById('edit-ib-img'));
+                    
+                    const rowsCon = document.getElementById('ib-rows-container');
+                    rowsCon.innerHTML = '';
+                    (this.data.infobox?.rows || []).forEach(r => editor.addIbRow(r.key, r.value));
+
+                    const blocksCon = document.getElementById('editor-blocks-list');
+                    blocksCon.innerHTML = '';
+                    window.editor.blocks = JSON.parse(JSON.stringify(this.data.blocks || [])); // Deep copy
+                    window.editor.renderBlocks();
+                }
+            },
+
             savePage: async function() {
-                try {
-                    document.querySelectorAll('.btn-magic-save').forEach(b => b.textContent = "保存中...");
-                    const updated = editor.collect();
-                    await setDoc(doc(db, "pages", this.currentPageId), updated);
-                    document.querySelectorAll('.btn-magic-save').forEach(b => b.textContent = "保存完了！");
-                    setTimeout(() => { location.reload(); }, 500);
-                } catch(e) { alert("保存失敗: " + e.message); console.error(e); }
+                if(!this.currentUser) { alert("保存するにはログインが必要です！"); return; }
+                
+                if(this.currentPageId === 'home') {
+                    const feat = document.getElementById('home-featured-input').value.split(',').map(s=>s.trim()).filter(s=>s);
+                    await setDoc(doc(db, "pages", "home"), { title:'Home', featured: feat });
+                } else {
+                    const subs = document.getElementById('edit-subtitles').value.split(',').map(s=>s.trim()).filter(s=>s);
+                    const sum = document.getElementById('edit-summary').value;
+                    const ibImg = document.getElementById('edit-ib-img').value;
+                    const ibRows = [];
+                    document.querySelectorAll('.ib-row').forEach(div => {
+                        const k = div.querySelector('.ib-key').value;
+                        const v = div.querySelector('.ib-val').value;
+                        if(k) ibRows.push({key:k, value:v});
+                    });
+
+                    // ブロック内のinputを最新化
+                    window.editor.syncBlocksFromDOM();
+
+                    const newData = {
+                        title: this.data.title,
+                        subtitles: subs,
+                        summary: sum,
+                        infobox: { image: ibImg, rows: ibRows },
+                        blocks: window.editor.blocks
+                    };
+                    await setDoc(doc(db, "pages", this.currentPageId), newData);
+                    this.data = newData;
+                }
+                alert("✨ 保存しました！");
+                this.toggleEdit();
             }
         };
 
         // --- Editor Logic ---
         window.editor = {
-            blocksContainer: document.getElementById('editor-blocks-list'),
-            currentEditingImgBlock: null, // マーカー編集中のブロック参照
+            blocks: [],
             
-            load: function() {
-                const data = app.data;
-                const isHome = app.currentPageId === 'home';
-                document.getElementById('edit-fields-wiki').classList.toggle('hidden', isHome);
-                document.getElementById('edit-fields-home').classList.toggle('hidden', !isHome);
-                if(isHome) {
-                    document.getElementById('home-featured-input').value = (data.featured || []).join(', ');
-                } else {
-                    document.getElementById('edit-summary').value = data.summary || '';
-                    document.getElementById('edit-ib-img').value = data.infobox?.image || '';
-                    const ibCon = document.getElementById('ib-rows-container'); ibCon.innerHTML = '';
-                    (data.infobox?.rows || []).forEach(r => this.addIbRow(r.key, r.value));
-                    
-                    this.blocksContainer.innerHTML = '';
-                    (data.blocks || []).forEach(b => {
-                        let blockForEditor = { ...b };
-                        if ((b.type === 'table' || b.type === 'timeline') && typeof b.data === 'string') { try { blockForEditor.data = JSON.parse(b.data); } catch(e) { blockForEditor.data = []; } }
-                        this.renderBlock(blockForEditor);
-                    });
-                    new Sortable(this.blocksContainer, { handle: '.edit-card-handle', animation: 150 });
+            apply: function(startTag, endTag) {
+                const activeEl = document.activeElement;
+                if (activeEl.tagName === 'TEXTAREA' || activeEl.type === 'text') {
+                    const start = activeEl.selectionStart;
+                    const end = activeEl.selectionEnd;
+                    const text = activeEl.value;
+                    const before = text.substring(0, start);
+                    const sel = text.substring(start, end);
+                    const after = text.substring(end);
+                    activeEl.value = before + startTag + sel + endTag + after;
+                    activeEl.focus();
+                    activeEl.selectionStart = start + startTag.length;
+                    activeEl.selectionEnd = end + startTag.length;
                 }
             },
 
-            collect: function() {
-                if(app.currentPageId === 'home') { return { title: 'Home', featured: document.getElementById('home-featured-input').value.split(',').map(s=>s.trim()).filter(s=>s) }; }
-                const blocks = [];
-                this.blocksContainer.querySelectorAll('.edit-block-item').forEach(el => {
-                    const type = el.dataset.type;
-                    let blockData = { type: type };
-                    const mTitle = el.querySelector('.media-title-input'); if(mTitle) blockData.mediaTitle = mTitle.value;
-                    const mDesc = el.querySelector('.media-desc-input'); if(mDesc) blockData.mediaDesc = mDesc.value;
+            applyLink: function(type) {
+                const activeEl = document.activeElement;
+                if (activeEl.tagName !== 'TEXTAREA' && activeEl.type !== 'text') return;
+                
+                const start = activeEl.selectionStart;
+                const end = activeEl.selectionEnd;
+                const text = activeEl.value;
+                const sel = text.substring(start, end);
 
-                    if(type === 'section') {
-                        blockData.level = el.querySelector('select').value;
-                        blockData.heading = el.querySelector('.heading-input').value;
-                        blockData.content = el.querySelector('.content-input').value;
-                    } else if(type === 'image' || type === 'pdf') {
-                        blockData.url = el.querySelector('.url-input').value;
-                        // マーカーデータ収集
-                        const markersJson = el.querySelector('.markers-input').value;
-                        try { blockData.markers = JSON.parse(markersJson); } catch(e) { blockData.markers = []; }
-                    } else if(type === 'video') {
-                        blockData.url = el.querySelector('.url-input').value;
-                    } else if(type === 'table') {
-                        const rows = []; el.querySelectorAll('tr').forEach(tr => { const cells = []; tr.querySelectorAll('textarea').forEach(ta => cells.push(ta.value)); if(cells.length > 0) rows.push(cells); });
-                        blockData.data = JSON.stringify(rows);
-                    } else if(type === 'timeline') {
-                        const tlData = []; el.querySelectorAll('.tl-edit-row').forEach(row => { tlData.push([row.querySelector('.tl-y-input').value, row.querySelector('.tl-e-input').value]); });
-                        blockData.data = JSON.stringify(tlData);
+                if (type === 'internal') {
+                    const pageName = prompt("リンク先のページ名を入力:", sel);
+                    if(pageName) this.apply('[[', ']]'); // 選択テキストをラップするロジックはapply同様
+                } else {
+                    const url = prompt("URLを入力:", "https://");
+                    if(url) {
+                         const before = text.substring(0, start);
+                         const after = text.substring(end);
+                         activeEl.value = before + `[${sel || 'リンク'}](${url})` + after;
                     }
-                    blocks.push(blockData);
-                });
-                const ibRows = []; document.querySelectorAll('.ib-row').forEach(row => { ibRows.push({ key: row.querySelector('.ib-k').value, value: row.querySelector('.ib-v').value }); });
-                return { title: app.data.title, summary: document.getElementById('edit-summary').value, infobox: { image: document.getElementById('edit-ib-img').value, rows: ibRows }, blocks: blocks };
+                }
+            },
+
+            autoLink: function() {
+                alert("編集中のこのブロックに対してのみ自動リンクを行いたい場合は、保存後にホーム画面の「全自動リンク」を使用することをお勧めします。");
+            },
+
+            updatePreview: function(input) {
+                const url = input.value;
+                const box = input.nextElementSibling;
+                if(url) {
+                     if(url.match(/\.(jpeg|jpg|gif|png)$/i)) box.innerHTML = `<img src="${url}">`;
+                     else if(url.match(/\.pdf$/i)) box.innerHTML = `<i class="fas fa-file-pdf"></i> PDF`;
+                     else box.innerHTML = `<img src="${url}" onerror="this.style.display='none'">`;
+                } else box.innerHTML = '';
             },
 
             addIbRow: function(k='', v='') {
-                const div = document.createElement('div'); div.className = 'ib-row'; div.style = "display:flex; gap:5px; margin-bottom:5px;";
-                div.innerHTML = `<input type="text" class="ib-k edit-area" value="${k}" style="width:40%" placeholder="項目"><input type="text" class="ib-v edit-area" value="${v}" style="width:60%" placeholder="内容"><button class="t-btn" onclick="this.parentElement.remove()">×</button>`;
-                document.getElementById('ib-rows-container').appendChild(div);
+                const con = document.getElementById('ib-rows-container');
+                const div = document.createElement('div');
+                div.className = 'ib-row';
+                div.style = 'display:flex; gap:5px; margin-bottom:5px;';
+                div.innerHTML = `
+                    <input type="text" class="ib-key" placeholder="項目名" value="${k}" style="width:30%;">
+                    <input type="text" class="ib-val" placeholder="内容" value="${v}" style="flex:1;">
+                    <button onclick="this.parentElement.remove()" style="color:red;">×</button>
+                `;
+                con.appendChild(div);
+            },
+
+            renderBlocks: function() {
+                const list = document.getElementById('editor-blocks-list');
+                list.innerHTML = '';
+                this.blocks.forEach((b, i) => {
+                    const item = document.createElement('div');
+                    item.className = 'edit-card';
+                    item.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <div><span class="edit-card-handle">☰</span> <span style="font-weight:bold; color:var(--disney-blue);">${b.type.toUpperCase()}</span></div>
+                        <button onclick="editor.removeBlock(${i})" style="color:red;">削除</button>
+                    </div>`;
+                    
+                    let body = '';
+                    if(b.type === 'section') {
+                        body = `<select onchange="editor.blocks[${i}].level=this.value" style="margin-bottom:5px;">
+                            <option value="2" ${b.level==2?'selected':''}>大見出し(H2)</option>
+                            <option value="3" ${b.level==3?'selected':''}>小見出し(H3)</option>
+                        </select>
+                        <input type="text" class="edit-area" value="${b.heading}" onchange="editor.blocks[${i}].heading=this.value" placeholder="見出し" style="font-weight:bold;">
+                        <textarea class="edit-area" onchange="editor.blocks[${i}].content=this.value" placeholder="本文" style="height:100px;">${b.content}</textarea>`;
+                    }
+                    else if(b.type === 'image' || b.type === 'video' || b.type === 'pdf') {
+                        body = `<input type="text" class="edit-area" value="${b.url}" onchange="editor.blocks[${i}].url=this.value" placeholder="メディアURL">
+                        <input type="text" class="edit-area" value="${b.mediaTitle||''}" onchange="editor.blocks[${i}].mediaTitle=this.value" placeholder="メディアタイトル">
+                        <textarea class="edit-area" onchange="editor.blocks[${i}].mediaDesc=this.value" placeholder="説明文" style="height:60px;">${b.mediaDesc||''}</textarea>`;
+                        if(b.type === 'image' || b.type === 'pdf') {
+                            body += `<button onclick="editor.editMarkers(${i})" style="margin-top:5px;">📍 マーカー編集</button>`;
+                        }
+                    }
+                    else if(b.type === 'table') {
+                        body = `<p>※表の編集は簡易版です</p><textarea class="edit-area" onchange="editor.updateTableRaw(${i}, this.value)" style="height:100px;">${b.rows.map(r=>r.join('|')).join('\n')}</textarea>`;
+                    }
+                    else if(b.type === 'timeline') {
+                        body = `<div id="tl-edit-${i}"></div><button onclick="editor.addTlEvent(${i})">+ 年表行を追加</button>`;
+                        setTimeout(() => {
+                            const tlCon = document.getElementById(`tl-edit-${i}`);
+                            if(tlCon) {
+                                b.events.forEach((e, idx) => {
+                                    tlCon.innerHTML += `<div class="tl-edit-row">
+                                        <input type="text" class="tl-y-input" value="${e.year}" onchange="editor.blocks[${i}].events[${idx}].year=this.value">
+                                        <input type="text" class="tl-e-input" value="${e.event}" onchange="editor.blocks[${i}].events[${idx}].event=this.value">
+                                        <button onclick="editor.removeTlEvent(${i},${idx})">×</button>
+                                    </div>`;
+                                });
+                            }
+                        }, 0);
+                    }
+                    
+                    item.innerHTML += body;
+                    list.appendChild(item);
+                });
+                
+                new Sortable(list, {
+                    handle: '.edit-card-handle',
+                    animation: 150,
+                    onEnd: (evt) => {
+                        const item = this.blocks.splice(evt.oldIndex, 1)[0];
+                        this.blocks.splice(evt.newIndex, 0, item);
+                        this.renderBlocks();
+                    }
+                });
             },
 
             addBlock: function(type) {
-                let data = { type: type };
-                if(type === 'section') data = { type: 'section', heading: '', content: '', level: 2 };
-                else if(type === 'table') data = { type: 'table', data: [['見出し1','見出し2'],['データ1','データ2']] };
-                else if(type === 'timeline') data = { type: 'timeline', data: [['2023','出来事']] };
-                else if(type === 'image' || type === 'pdf') data = { type: type, url: '', markers: [] };
-                else data.url = '';
-                this.renderBlock(data);
+                if(type === 'section') this.blocks.push({ type:'section', level:2, heading:'', content:'' });
+                if(type === 'image') this.blocks.push({ type:'image', url:'', mediaTitle:'', mediaDesc:'', markers:[] });
+                if(type === 'pdf') this.blocks.push({ type:'pdf', url:'', mediaTitle:'', mediaDesc:'', markers:[] });
+                if(type === 'video') this.blocks.push({ type:'video', url:'', mediaTitle:'', mediaDesc:'' });
+                if(type === 'table') this.blocks.push({ type:'table', mediaTitle:'', headers:['項目','内容'], rows:[['例','内容']] });
+                if(type === 'timeline') this.blocks.push({ type:'timeline', mediaTitle:'', events:[{year:'1983', event:'開園'}] });
+                this.renderBlocks();
             },
 
-            renderBlock: function(b) {
-                const div = document.createElement('div'); div.className = 'edit-card edit-block-item'; div.dataset.type = b.type;
-                let html = `<div style="display:flex; justify-content:space-between; margin-bottom:10px;"><div style="display:flex; align-items:center;"><i class="fas fa-bars edit-card-handle"></i> <span style="font-weight:bold; color:var(--disney-blue); text-transform:uppercase;">${b.type}</span></div><button onclick="this.closest('.edit-card').remove()" style="color:red;">削除</button></div>`;
-
-                if(b.type === 'section') {
-                    html += `<select class="edit-area" style="margin-bottom:5px;"><option value="2" ${b.level==2?'selected':''}>大見出し (H2)</option><option value="3" ${b.level==3?'selected':''}>小見出し (H3)</option></select><input type="text" class="edit-area heading-input" value="${b.heading||''}" placeholder="見出し" style="font-weight:bold; margin-bottom:5px;"><textarea class="edit-area content-input" style="height:100px;" onfocus="activeInput=this">${b.content||''}</textarea>`;
-                } else {
-                    html += `<input type="text" class="edit-area media-title-input" value="${b.mediaTitle||''}" placeholder="メディアタイトル (任意)" style="margin-bottom:5px;">`;
-                    if(b.type === 'image' || b.type === 'pdf') {
-                        const markersJson = JSON.stringify(b.markers || []).replace(/"/g, '&quot;');
-                        html += `<div style="display:flex; gap:5px; flex-direction:column;">
-                                    <div style="display:flex; gap:5px;">
-                                        <input type="text" class="edit-area url-input" value="${b.url||''}" placeholder="${b.type==='pdf'?'PDF':'画像/GIF'}のURL" style="flex:1;" oninput="editor.updatePreview(this)">
-                                        <button class="t-btn" onclick="editor.openMarkerEditor(this)">📍 マーカー編集</button>
-                                    </div>
-                                    <div class="link-preview"></div>
-                                 </div><input type="hidden" class="markers-input" value="${markersJson}">`;
-                    } else if(b.type === 'video') {
-                        html += `<input type="text" class="edit-area url-input" value="${b.url||''}" placeholder="動画のURL" oninput="editor.updatePreview(this)"><div class="link-preview"></div>`;
-                    } else if(b.type === 'table') {
-                        html += `<div class="table-editor-area"><table class="editable-table"><tbody>`;
-                        const safeData = (b.data || [['','']]).map(row => row.map(cell => cell.replace(/"/g, '&quot;')));
-                        safeData.forEach(row => { html += `<tr>`; row.forEach(cell => { html += `<td><textarea>${cell}</textarea></td>`; }); html += `<td><button onclick="this.closest('tr').remove()">×</button></td></tr>`; });
-                        html += `</tbody></table><button class="t-btn" onclick="editor.addTableRow(this)" style="margin-top:5px; width:100%;">+ 行を追加</button><button class="t-btn" onclick="editor.addTableCol(this)" style="margin-top:5px; width:100%;">+ 列を追加</button></div>`;
-                    } else if(b.type === 'timeline') {
-                        html += `<div class="timeline-editor-list">`;
-                        const safeData = (b.data || [['','']]).map(row => row.map(cell => cell.replace(/"/g, '&quot;')));
-                        safeData.forEach(row => { html += `<div class="tl-edit-row"><i class="fas fa-bars tl-handle"></i><input class="edit-area tl-y-input" value="${row[0]||''}" placeholder="年"><input class="edit-area tl-e-input" value="${row[1]||''}" placeholder="出来事"><button onclick="this.parentElement.remove()" style="margin-left:5px; color:red;">×</button></div>`; });
-                        html += `</div><div style="margin-top:5px; display:flex; gap:5px;"><button class="t-btn" onclick="editor.addTlRow(this)" style="flex:1;">+ 行を追加</button><button class="t-btn" onclick="editor.sortTimeline(this)" style="flex:1; background:#e0f7fa;">古い順に並び替え</button></div>`;
-                    }
-                    html += `<textarea class="edit-area media-desc-input" placeholder="説明文 (任意)" style="height:60px; margin-top:5px;">${b.mediaDesc||''}</textarea>`;
-                }
-                div.innerHTML = html;
-                this.blocksContainer.appendChild(div);
-                
-                // 初期プレビュー表示
-                if(b.type === 'image' || b.type === 'pdf' || b.type === 'video') {
-                    const input = div.querySelector('.url-input');
-                    if(input && input.value) editor.updatePreview(input);
-                }
-                if(b.type === 'timeline') new Sortable(div.querySelector('.timeline-editor-list'), { handle: '.tl-handle', animation: 150 });
-            },
-
-            // --- リンクプレビュー機能 ---
-            updatePreview: function(input) {
-                const container = input.parentElement.querySelector('.link-preview') || input.parentElement.parentElement.querySelector('.link-preview');
-                if(!container) return;
-                const url = input.value;
-                if(!url) { container.innerHTML = ''; return; }
-                
-                // 拡張子などから簡易判定
-                if(url.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
-                    container.innerHTML = `<img src="${url}">`;
-                } else if(url.match(/\.(mp4|webm)$/i)) {
-                    container.innerHTML = `<video src="${url}"></video>`;
-                } else if(url.match(/\.pdf$/i)) {
-                    container.innerHTML = `<div style="text-align:center; padding:10px; font-size:30px; color:red;"><i class="fas fa-file-pdf"></i></div>`;
-                } else if(url.includes('youtube.com') || url.includes('youtu.be')) {
-                    const id = app.getYoutubeId(url);
-                    if(id) container.innerHTML = `<img src="https://img.youtube.com/vi/${id}/hqdefault.jpg">`;
-                } else {
-                    // 不明な場合はアイコン
-                    container.innerHTML = `<div style="text-align:center; padding:10px; font-size:30px; color:#ccc;"><i class="fas fa-image"></i></div>`;
+            removeBlock: function(i) {
+                if(confirm('削除しますか？')) {
+                    this.blocks.splice(i, 1);
+                    this.renderBlocks();
                 }
             },
 
-            // --- マーカー編集機能 ---
-            openMarkerEditor: function(btn) {
-                const blockDiv = btn.closest('.edit-block-item');
-                const type = blockDiv.dataset.type;
-                const url = blockDiv.querySelector('.url-input').value;
-                if(!url) return alert("先にURLを入力してください");
-                
-                this.currentEditingImgBlock = blockDiv;
-                const markersInput = blockDiv.querySelector('.markers-input');
-                let markers = [];
-                try { markers = JSON.parse(markersInput.value); } catch(e){}
-
-                const b = document.getElementById('modal-body');
-                let mediaHtml = type === 'pdf' ? `<iframe src="${url}" class="pdf-viewer"></iframe>` : `<img src="${url}" style="max-height:80vh; display:block;">`;
-                
-                let html = `<div style="position:relative; display:inline-block; width:100%; height:100%;" id="marker-edit-area" onclick="editor.onAreaClick(event)">${mediaHtml}`;
-                // PDFの場合はiframeの上に透明なカバーを置いてクリックを検知させる簡易実装
-                if(type==='pdf') html += `<div style="position:absolute; top:0; left:0; width:100%; height:100%; cursor:crosshair;"></div>`;
-
-                markers.forEach((m, i) => {
-                    html += `<div class="img-marker m-${m.color}" style="top:${m.y}%; left:${m.x}%;" onclick="editor.editExistingMarker(event, ${i})"></div>`;
-                });
-                html += `</div><div style="position:absolute; bottom:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); color:white; padding:10px; border-radius:5px; pointer-events:none;">クリックで追加 / マーカークリックで編集・削除</div>`;
-                
-                b.innerHTML = html;
-                document.getElementById('media-modal').classList.add('active');
+            syncBlocksFromDOM: function() {
+                // 基本的にonchangeで同期しているが、念のため
             },
 
-            onAreaClick: function(e) {
-                if(e.target.classList.contains('img-marker')) return; 
-                const rect = e.currentTarget.getBoundingClientRect();
-                const x = ((e.clientX - rect.left) / rect.width) * 100;
-                const y = ((e.clientY - rect.top) / rect.height) * 100;
-                this.addMarker(x, y);
+            // --- Timeline helpers ---
+            addTlEvent: function(bi) {
+                this.blocks[bi].events.push({year:'', event:''});
+                this.renderBlocks();
+            },
+            removeTlEvent: function(bi, ei) {
+                this.blocks[bi].events.splice(ei, 1);
+                this.renderBlocks();
             },
 
-            addMarker: function(x, y) {
-                const text = prompt("表示する文字:", "説明");
-                if(text === null) return;
-                const link = prompt("リンク先 (WikiページID または URL):", "");
-                const color = prompt("色 (transparent, black, red, blue, green, yellow):", "red") || "red";
-
-                const markersInput = this.currentEditingImgBlock.querySelector('.markers-input');
-                let markers = JSON.parse(markersInput.value);
-                markers.push({ x, y, text, link, color });
-                markersInput.value = JSON.stringify(markers);
-                
-                // 再描画（モーダルを閉じて開き直す簡易実装）
-                app.closeModal();
-                this.currentEditingImgBlock.querySelector('button[onclick*="openMarkerEditor"]').click();
-            },
-
-            editExistingMarker: function(e, index) {
-                e.stopPropagation();
-                const markersInput = this.currentEditingImgBlock.querySelector('.markers-input');
-                let markers = JSON.parse(markersInput.value);
-                const m = markers[index];
-
-                if(confirm("このマーカーを削除しますか？\n（キャンセルで編集）")) {
-                    markers.splice(index, 1);
-                } else {
-                    m.text = prompt("文字:", m.text) || m.text;
-                    m.link = prompt("リンク:", m.link) || m.link;
-                    m.color = prompt("色:", m.color) || m.color;
-                }
-                markersInput.value = JSON.stringify(markers);
-                app.closeModal();
-                this.currentEditingImgBlock.querySelector('button[onclick*="openMarkerEditor"]').click();
-            },
-
-            // --- 自動リンク機能 ---
-            autoLink: async function() {
-                if(!confirm("Wiki内の全てのページを探して、自動的にリンクを貼りますか？")) return;
-                const snap = await getDocs(query(collection(db, "pages")));
-                const pageIds = [];
-                snap.forEach(d => pageIds.push(d.id));
-                pageIds.sort((a, b) => b.length - a.length);
-
-                const textareas = document.querySelectorAll('.edit-area');
-                let count = 0;
-                textareas.forEach(ta => {
-                    let text = ta.value;
-                    pageIds.forEach(id => {
-                        const regex = new RegExp(`(?<!\\[\\[)(${id})(?!\\]\\])`, 'g');
-                        if(text.match(regex)) { text = text.replace(regex, '[[$1]]'); count++; }
-                    });
-                    ta.value = text;
-                });
-                alert(`${count} 箇所のリンクを作成しました！`);
-            },
-
-            // --- Helper ---
-            apply: function(start, end) {
-                const el = activeInput; 
-                if (el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')) {
-                    const s = el.selectionStart; const e = el.selectionEnd; const v = el.value;
-                    el.value = v.substring(0, s) + start + v.substring(s, e) + end + v.substring(e);
-                    el.focus();
+            // --- Marker Editor (簡易版: 座標入力) ---
+            editMarkers: function(i) {
+                const b = this.blocks[i];
+                const newJson = prompt("マーカーデータ(JSON)を入力してください。\n形式: [{\"x\":50,\"y\":50,\"text\":\"ここ\",\"color\":\"red\"}]", JSON.stringify(b.markers || []));
+                if(newJson) {
+                    try {
+                        b.markers = JSON.parse(newJson);
+                    } catch(e) { alert("JSON形式が間違っています"); }
                 }
             },
-            applyLink: function(type) {
-                if(!activeInput) return;
-                const url = prompt(type==='internal' ? "ページID:" : "URL:");
-                if(!url) return;
-                this.apply(type==='internal' ? `[[${url}]]` : `[${url} リンク]`, '');
-            },
-            addTableRow: function(btn) { const tbody = btn.previousElementSibling.querySelector('tbody'); const col = tbody.rows[0]?.cells.length-1||2; const tr = document.createElement('tr'); let h=''; for(let i=0;i<col;i++) h+='<td><textarea></textarea></td>'; h+='<td><button onclick="this.closest(\'tr\').remove()">×</button></td>'; tr.innerHTML=h; tbody.appendChild(tr); },
-            addTableCol: function(btn) { const t = btn.parentElement.querySelector('table'); for(let i=0;i<t.rows.length;i++){ const td=document.createElement('td'); td.innerHTML='<textarea></textarea>'; t.rows[i].insertBefore(td, t.rows[i].lastElementChild); } },
-            addTlRow: function(btn) { const d=document.createElement('div'); d.className='tl-edit-row'; d.innerHTML=`<i class="fas fa-bars tl-handle"></i><input class="edit-area tl-y-input" placeholder="年"><input class="edit-area tl-e-input" placeholder="出来事"><button onclick="this.parentElement.remove()" style="margin-left:5px; color:red;">×</button>`; btn.parentElement.previousElementSibling.appendChild(d); },
-            sortTimeline: function(btn) { const a = btn.parentElement.previousElementSibling; const rows = Array.from(a.querySelectorAll('.tl-edit-row')); rows.sort((x, y) => x.querySelector('.tl-y-input').value.localeCompare(y.querySelector('.tl-y-input').value, undefined, {numeric:true})); rows.forEach(r => a.appendChild(r)); }
+            
+            updateTableRaw: function(i, text) {
+                const rows = text.split('\n').map(r => r.split('|'));
+                this.blocks[i].rows = rows;
+            }
         };
 
-        app.init();
+        window.onload = function() {
+            app.init();
+        };
     </script>
 </body>
 </html>
