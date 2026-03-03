@@ -104,7 +104,7 @@
         .hidden { display: none !important; }
     </style>
 </head>
-<body>
+<body onload="app.init()">
     <div id="media-modal" class="modal" onclick="app.closeModal()">
         <div class="modal-close">×</div>
         <img id="modal-img" class="view-media">
@@ -228,7 +228,6 @@
                     if(d.id !== '_config') this.allPageCache.push({ id: d.id, ...d.data() });
                 });
                 
-                // 並び順の設定を読み込み
                 const configSnap = await getDoc(doc(db, "pages", "_config"));
                 if(configSnap.exists()) {
                     this.homeOrder = configSnap.data().homeOrder || [];
@@ -262,6 +261,7 @@
                     document.getElementById('display-title').innerText = this.currentPageId;
                     this.renderPageContent(this.data);
                 } else {
+                    this.data = {};
                     document.getElementById('display-title').innerText = this.currentPageId + " (未作成)";
                     document.getElementById('page-content').innerHTML = '<p>ページが存在しません。右上の編集ボタンから作成できます。</p>';
                 }
@@ -271,8 +271,7 @@
                 const grid = document.getElementById('home-grid');
                 grid.innerHTML = '';
                 
-                // 記憶された順序に従ってソート
-                let sortedPages = [...this.allPageCache].filter(p => p.id !== 'home');
+                let sortedPages = [...this.allPageCache];
                 if(this.homeOrder.length > 0) {
                     sortedPages.sort((a, b) => {
                         let idxA = this.homeOrder.indexOf(a.id);
@@ -293,13 +292,12 @@
                     grid.appendChild(div);
                 });
 
-                // 並び替え機能を有効化
                 new Sortable(grid, {
                     animation: 150,
+                    ghostClass: 'sortable-ghost',
                     onEnd: async () => {
                         const newOrder = Array.from(grid.querySelectorAll('.page-card')).map(el => el.dataset.id);
                         this.homeOrder = newOrder;
-                        // 順序をFirebaseに保存
                         await setDoc(doc(db, "pages", "_config"), { homeOrder: newOrder }, { merge: true });
                     }
                 });
@@ -413,9 +411,8 @@
 
             async autoLinkAllPages() {
                 if(!confirm("全ページの本文からタイトルを探して自動リンク化しますか？")) return;
-                const pages = this.allPageCache.map(p => p.id).filter(id => id !== 'home');
+                const pages = this.allPageCache.map(p => p.id);
                 for(let pData of this.allPageCache) {
-                    if(pData.id === 'home') continue;
                     let changed = false;
                     const updateBlock = (text) => {
                         let newText = text;
@@ -450,9 +447,7 @@
                 const name = prompt("新しいWikiページの名前:");
                 if(name) this.loadPage(name);
             },
-            searchLive(val) {
-                // 検索機能(フィルタリングなど必要に応じて追加可能)
-            }
+            searchLive(val) {}
         };
 
         window.editor = {
@@ -495,7 +490,6 @@
                     });
                     inner += `</table></div><button onclick="editor.addTableRow(this)">+ 行追加</button><button onclick="editor.addTableCol(this)">+ 列追加</button>`;
                 } else if(b.type === 'timeline') {
-                    inner += `<button onclick="editor.sortTimeline(this)" style="background:var(--disney-blue); color:white; border:none; padding:5px 10px; border-radius:3px; margin-bottom:10px;">昔順に並べ替え</button>`;
                     inner += `<div class="ed-tl-cont">`;
                     b.data.forEach(item => {
                         inner += `<div class="tl-edit-row" style="display:flex; gap:5px; margin-top:5px;"><input type="text" class="tl-y" value="${item.year||''}" placeholder="年" style="width:60px;"><input type="text" class="tl-m" value="${item.month||''}" placeholder="月" style="width:40px;"><input type="text" class="tl-e" value="${item.event||''}" placeholder="出来事" style="flex:1;"><button onclick="this.parentElement.remove()">×</button></div>`;
@@ -526,45 +520,29 @@
                 div.innerHTML = `<input type="text" class="tl-y" placeholder="年" style="width:60px;"><input type="text" class="tl-m" placeholder="月" style="width:40px;"><input type="text" class="tl-e" placeholder="出来事" style="flex:1;"><button onclick="this.parentElement.remove()">×</button>`;
                 cont.appendChild(div);
             },
-            sortTimeline(btn) {
-                const cont = btn.parentElement.querySelector('.ed-tl-cont');
-                const rows = Array.from(cont.querySelectorAll('.tl-edit-row'));
-                rows.sort((a, b) => {
-                    const yA = parseInt(a.querySelector('.tl-y').value) || 0;
-                    const yB = parseInt(b.querySelector('.tl-y').value) || 0;
-                    if(yA !== yB) return yA - yB;
-                    const mA = parseInt(a.querySelector('.tl-m').value) || 0;
-                    const mB = parseInt(b.querySelector('.tl-m').value) || 0;
-                    return mA - mB;
-                });
-                rows.forEach(r => cont.appendChild(r));
-            },
             getBlocksFromDOM() {
                 return Array.from(document.querySelectorAll('.block-item')).map(card => {
                     const type = card.getAttribute('data-type');
-                    const res = { type: type, title: card.querySelector('.ed-title').value };
-                    if(type === 'section') {
-                        res.text = card.querySelector('.ed-text').value;
-                    } else if(['image','gif','pdf','youtube'].includes(type)) { 
-                        res.url = card.querySelector('.ed-url').value; 
-                        res.description = card.querySelector('.ed-desc').value; 
+                    const b = { type, title: card.querySelector('.ed-title').value };
+                    if(type === 'section') b.text = card.querySelector('.ed-text').value;
+                    else if(['image','gif','pdf','youtube'].includes(type)) {
+                        b.url = card.querySelector('.ed-url').value;
+                        b.description = card.querySelector('.ed-desc').value;
                     } else if(type === 'table') {
-                        res.data = Array.from(card.querySelectorAll('table tr')).map(tr => 
-                            Array.from(tr.querySelectorAll('.table-cell')).map(td => td.value)
+                        b.data = Array.from(card.querySelectorAll('tr')).map(tr => 
+                            Array.from(tr.querySelectorAll('.table-cell')).map(input => input.value)
                         );
                     } else if(type === 'timeline') {
-                        res.data = Array.from(card.querySelectorAll('.tl-edit-row')).map(row => ({
+                        b.data = Array.from(card.querySelectorAll('.tl-edit-row')).map(row => ({
                             year: row.querySelector('.tl-y').value,
                             month: row.querySelector('.tl-m').value,
                             event: row.querySelector('.tl-e').value
                         }));
                     }
-                    return res;
+                    return b;
                 });
             }
         };
-
-        app.init();
     </script>
 </body>
 </html>
