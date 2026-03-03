@@ -48,7 +48,6 @@
         .sidebar { width: 280px; padding: 20px; background: var(--sidebar-bg); border-right: 1px solid #eee; }
         .main-content { flex: 1; padding: 40px; box-sizing: border-box; }
 
-        /* コンテンツスタイル */
         .page-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid #aaa; margin-bottom: 20px; padding-bottom: 10px; }
         .intro-container { display: flex; gap: 30px; margin-bottom: 30px; align-items: flex-start; }
         .fixed-summary { flex: 1; font-size: 1.1em; line-height: 1.8; white-space: pre-wrap; word-break: break-all; }
@@ -62,24 +61,20 @@
         h2 { border-bottom: 1px solid #aaa; color: var(--disney-blue); margin-top: 40px; padding-bottom: 5px; font-size: 1.8em; clear: both; }
         h3 { color: var(--disney-blue); margin-top: 25px; font-size: 1.4em; border-bottom: 1px dashed #ccc; }
 
-        /* メディア表示 */
         .display-img, .display-gif { max-width: 100%; border-radius: 8px; cursor: pointer; transition: 0.3s; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .display-img:hover { opacity: 0.9; transform: scale(1.01); }
         .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin-bottom: 20px; }
         .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px; }
 
-        /* タイムライン */
         .timeline-box { border-left: 3px solid var(--disney-gold); margin: 20px 0; padding-left: 20px; }
         .timeline-row { display: flex; margin-bottom: 15px; align-items: flex-start; }
         .tl-date { width: 120px; font-weight: bold; color: var(--disney-blue); flex-shrink: 0; font-size: 0.9em; }
         .tl-event { flex: 1; background: #f9f9f9; padding: 10px; border-radius: 5px; }
 
-        /* テーブル */
         .wiki-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
         .wiki-table th, .wiki-table td { border: 1px solid #ccc; padding: 10px; }
         .wiki-table th { background: #f4f4f4; }
 
-        /* エディタ */
         .editor-toolbar { background: #f8f9fa; border: 1px solid #ccc; padding: 10px; display: flex; gap: 8px; position: sticky; top: 65px; z-index: 900; margin-bottom: 20px; flex-wrap: wrap; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .t-btn { background: white; border: 1px solid #ccc; padding: 6px 10px; cursor: pointer; border-radius: 4px; font-size: 13px; display: flex; align-items: center; gap: 5px; }
         .t-btn:hover { background: #eee; }
@@ -89,13 +84,11 @@
         .edit-area { width: 100%; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; font-size: 15px; margin-top: 5px; }
         .edit-card-handle { cursor: grab; color: var(--disney-gold); float: right; font-size: 24px; }
 
-        /* モーダル */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 99999; display: none; justify-content: center; align-items: center; }
         .modal.active { display: flex; }
         .modal-close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; }
         .view-media { max-width: 90vw; max-height: 90vh; }
 
-        /* Home Grid */
         .home-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-top: 30px; }
         .page-card { border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background: white; cursor: pointer; transition: 0.2s; position: relative; }
         .page-card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
@@ -105,7 +98,6 @@
         .btn-magic-save { background: var(--disney-gold); color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; }
         .btn-auto-link { background: linear-gradient(to right, #8e2de2, #4a00e0); color: white; border: none; padding: 12px; border-radius: 25px; font-weight: bold; cursor: pointer; margin-bottom: 20px; width: 100%; }
         
-        /* リンク装飾 */
         a.wiki-link { color: #0645ad; font-weight: bold; text-decoration: none; cursor: pointer; }
         a.wiki-link:hover { text-decoration: underline; }
         
@@ -127,9 +119,8 @@
                 <i class="fas fa-search"></i>
                 <input type="text" id="search-input" placeholder="Wiki内を検索..." oninput="app.searchLive(this.value)">
             </div>
-            <div id="search-results" class="search-results"></div>
         </div>
-        <button id="auth-btn" class="btn-royal" onclick="app.handleAuth()" style="background: var(--disney-gold); color: #000; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">ログイン</button>
+        <button id="auth-btn" onclick="app.handleAuth()" style="background: var(--disney-gold); color: #000; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">ログイン</button>
     </header>
 
     <div class="wrapper">
@@ -143,7 +134,7 @@
             <div id="view-mode">
                 <div class="page-header" id="page-header-area">
                     <h1 id="display-title" style="font-family:'Cinzel',serif; font-size:2.5em; margin:0;"></h1>
-                    <button id="edit-toggle-btn" class="btn-royal" onclick="app.toggleEdit()" style="background:none; border:1px solid #ccc; color:#666; cursor:pointer; padding:5px 10px;">このページを編集 ✎</button>
+                    <button id="edit-toggle-btn" onclick="app.toggleEdit()" style="background:none; border:1px solid #ccc; color:#666; cursor:pointer; padding:5px 10px;">このページを編集 ✎</button>
                 </div>
                 
                 <div id="home-view" class="hidden">
@@ -270,11 +261,12 @@
             renderHomeGrid() {
                 const grid = document.getElementById('home-grid');
                 grid.innerHTML = '';
-                this.allPageCache.sort((a,b) => (a.homeOrder || 0) - (b.homeOrder || 0)).forEach(p => {
+                this.allPageCache.forEach(p => {
                     if(p.id === 'home') return;
                     const div = document.createElement('div');
                     div.className = 'page-card';
-                    const imgUrl = (p.infobox && p.infobox.image) ? p.infobox.image : DEFAULT_IMG;
+                    // 画像がない場合は指定のデフォルト画像を使用
+                    const imgUrl = (p.infobox && p.infobox.image && p.infobox.image.trim() !== "") ? p.infobox.image : DEFAULT_IMG;
                     div.innerHTML = `<img src="${imgUrl}" class="card-img"><div class="card-body">${p.id}</div>`;
                     div.onclick = () => this.loadPage(p.id);
                     grid.appendChild(div);
@@ -513,21 +505,23 @@
                 rows.forEach(r => cont.appendChild(r));
             },
             getBlocksFromDOM() {
+                // 保存時にDOMからデータを抽出する重要な関数
                 return Array.from(document.querySelectorAll('.block-item')).map(card => {
                     const type = card.getAttribute('data-type');
                     const res = { type: type, title: card.querySelector('.ed-title').value };
-                    if(type === 'section') res.text = card.querySelector('.ed-text').value;
-                    else if(['image','gif','pdf','youtube'].includes(type)) { 
+                    if(type === 'section') {
+                        res.text = card.querySelector('.ed-text').value;
+                    } else if(['image','gif','pdf','youtube'].includes(type)) { 
                         res.url = card.querySelector('.ed-url').value; 
                         res.description = card.querySelector('.ed-desc').value; 
-                    }
-                    else if(type === 'table') {
-                        res.data = Array.from(card.querySelectorAll('tr')).map(tr => Array.from(tr.querySelectorAll('.table-cell')).map(td => td.value));
+                    } else if(type === 'table') {
+                        const rows = Array.from(card.querySelectorAll('table tr'));
+                        res.data = rows.map(tr => Array.from(tr.querySelectorAll('.table-cell')).map(input => input.value));
                     } else if(type === 'timeline') {
-                        res.data = Array.from(card.querySelectorAll('.tl-edit-row')).map(r => ({ 
-                            year: r.querySelector('.tl-y').value, 
-                            month: r.querySelector('.tl-m').value,
-                            event: r.querySelector('.tl-e').value 
+                        res.data = Array.from(card.querySelectorAll('.tl-edit-row')).map(row => ({
+                            year: row.querySelector('.tl-y').value,
+                            month: row.querySelector('.tl-m').value,
+                            event: row.querySelector('.tl-e').value
                         }));
                     }
                     return res;
@@ -535,6 +529,7 @@
             }
         };
 
+        // 初期化実行
         app.init();
     </script>
 </body>
