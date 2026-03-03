@@ -134,7 +134,9 @@
             <div id="view-mode">
                 <div class="page-header" id="page-header-area">
                     <h1 id="display-title" style="font-family:'Cinzel',serif; font-size:2.5em; margin:0;"></h1>
-                    <button id="edit-toggle-btn" onclick="app.toggleEdit()" style="background:none; border:1px solid #ccc; color:#666; cursor:pointer; padding:5px 10px;">このページを編集 ✎</button>
+                    <div id="header-btns">
+                        <button id="edit-toggle-btn" onclick="app.toggleEdit()" style="background:none; border:1px solid #ccc; color:#666; cursor:pointer; padding:5px 10px;">このページを編集 ✎</button>
+                    </div>
                 </div>
                 
                 <div id="home-view" class="hidden">
@@ -202,6 +204,7 @@
             currentPageId: 'home',
             data: {},
             allPageCache: [],
+            homeOrder: [],
 
             async init() {
                 onAuthStateChanged(auth, (user) => {
@@ -222,8 +225,14 @@
                 const snap = await getDocs(collection(db, "pages"));
                 this.allPageCache = [];
                 snap.forEach(d => {
-                    this.allPageCache.push({ id: d.id, ...d.data() });
+                    if(d.id !== '_config') this.allPageCache.push({ id: d.id, ...d.data() });
                 });
+                
+                // 並び順の設定を読み込み
+                const configSnap = await getDoc(doc(db, "pages", "_config"));
+                if(configSnap.exists()) {
+                    this.homeOrder = configSnap.data().homeOrder || [];
+                }
             },
 
             async loadPage(pageId, pushHistory = true) {
@@ -261,15 +270,38 @@
             renderHomeGrid() {
                 const grid = document.getElementById('home-grid');
                 grid.innerHTML = '';
-                this.allPageCache.forEach(p => {
-                    if(p.id === 'home') return;
+                
+                // 記憶された順序に従ってソート
+                let sortedPages = [...this.allPageCache].filter(p => p.id !== 'home');
+                if(this.homeOrder.length > 0) {
+                    sortedPages.sort((a, b) => {
+                        let idxA = this.homeOrder.indexOf(a.id);
+                        let idxB = this.homeOrder.indexOf(b.id);
+                        if(idxA === -1) idxA = 999;
+                        if(idxB === -1) idxB = 999;
+                        return idxA - idxB;
+                    });
+                }
+
+                sortedPages.forEach(p => {
                     const div = document.createElement('div');
                     div.className = 'page-card';
-                    // 画像がない場合は指定のデフォルト画像を使用
+                    div.setAttribute('data-id', p.id);
                     const imgUrl = (p.infobox && p.infobox.image && p.infobox.image.trim() !== "") ? p.infobox.image : DEFAULT_IMG;
                     div.innerHTML = `<img src="${imgUrl}" class="card-img"><div class="card-body">${p.id}</div>`;
                     div.onclick = () => this.loadPage(p.id);
                     grid.appendChild(div);
+                });
+
+                // 並び替え機能を有効化
+                new Sortable(grid, {
+                    animation: 150,
+                    onEnd: async () => {
+                        const newOrder = Array.from(grid.querySelectorAll('.page-card')).map(el => el.dataset.id);
+                        this.homeOrder = newOrder;
+                        // 順序をFirebaseに保存
+                        await setDoc(doc(db, "pages", "_config"), { homeOrder: newOrder }, { merge: true });
+                    }
                 });
             },
 
@@ -417,6 +449,9 @@
             createNewPage() {
                 const name = prompt("新しいWikiページの名前:");
                 if(name) this.loadPage(name);
+            },
+            searchLive(val) {
+                // 検索機能(フィルタリングなど必要に応じて追加可能)
             }
         };
 
@@ -505,7 +540,6 @@
                 rows.forEach(r => cont.appendChild(r));
             },
             getBlocksFromDOM() {
-                // 保存時にDOMからデータを抽出する重要な関数
                 return Array.from(document.querySelectorAll('.block-item')).map(card => {
                     const type = card.getAttribute('data-type');
                     const res = { type: type, title: card.querySelector('.ed-title').value };
@@ -515,8 +549,9 @@
                         res.url = card.querySelector('.ed-url').value; 
                         res.description = card.querySelector('.ed-desc').value; 
                     } else if(type === 'table') {
-                        const rows = Array.from(card.querySelectorAll('table tr'));
-                        res.data = rows.map(tr => Array.from(tr.querySelectorAll('.table-cell')).map(input => input.value));
+                        res.data = Array.from(card.querySelectorAll('table tr')).map(tr => 
+                            Array.from(tr.querySelectorAll('.table-cell')).map(td => td.value)
+                        );
                     } else if(type === 'timeline') {
                         res.data = Array.from(card.querySelectorAll('.tl-edit-row')).map(row => ({
                             year: row.querySelector('.tl-y').value,
@@ -529,7 +564,6 @@
             }
         };
 
-        // 初期化実行
         app.init();
     </script>
 </body>
