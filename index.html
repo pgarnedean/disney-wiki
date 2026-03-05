@@ -105,6 +105,10 @@
 
         .btn-delete { background: none; border: 1px solid #dc3545; color: #dc3545; cursor: pointer; padding: 5px 10px; border-radius: 4px; display: flex; align-items: center; gap: 5px; font-size: 13px; }
         .btn-delete:hover { background: #dc3545; color: white; }
+
+        /* 新機能用のスタイル */
+        .table-controls { display: flex; gap: 5px; margin-bottom: 10px; background: #eee; padding: 5px; border-radius: 4px; }
+        .table-editor-cell { border: 1px solid #ccc; padding: 5px; min-width: 50px; }
     </style>
 </head>
 <body onload="app.init()">
@@ -274,7 +278,7 @@
                     document.getElementById('display-title').innerText = this.currentPageId;
                     this.renderPageContent(this.data);
                 } else {
-                    this.data = {};
+                    this.data = { summary: '', infobox: {rows: []}, blocks: [] };
                     document.getElementById('display-title').innerText = this.currentPageId + " (未作成)";
                     document.getElementById('page-content').innerHTML = '<p>ページが存在しません。右上の編集ボタンから作成できます。</p>';
                 }
@@ -514,7 +518,7 @@
                 area.focus();
             },
             addBlock(type) {
-                const b = { type: type, title: '', text: '', url: '', description: '', data: type === 'table' ? [['',''],['','']] : (type === 'timeline' ? [{year:'', month:'', event:''}] : []) };
+                const b = { type: type, title: '', text: '', url: '', description: '', data: type === 'table' ? [['項1','項2'],['データ1','データ2']] : (type === 'timeline' ? [{year:'2024', month:'1', event:''}] : []) };
                 this.renderEditBlock(b);
             },
             addIbRow(k='', v='') {
@@ -530,106 +534,104 @@
                 div.className = 'edit-card block-item';
                 div.setAttribute('data-type', b.type);
                 
-                let inner = `<div class="edit-card-handle">☰</div><h4>${b.type.toUpperCase()}</h4>`;
+                let inner = `<div class="edit-card-handle">☰</div><h4 style="color:var(--disney-gold)">${b.type.toUpperCase()} ブロック</h4>`;
                 inner += `<input type="text" class="ed-title edit-area" value="${b.title||''}" placeholder="タイトル・見出し">`;
                 
                 if(b.type === 'section') {
-                    inner += `<textarea class="ed-text edit-area" style="height:100px;" onfocus="editor.lastFocused=this">${b.text||''}</textarea>`;
+                    inner += `<textarea class="ed-text edit-area" style="height:100px;" onfocus="editor.lastFocused=this" placeholder="本文を入力...">${b.text||''}</textarea>`;
                 } else if(['image','gif','pdf','youtube'].includes(b.type)) {
-                    inner += `<input type="text" class="ed-url edit-area" value="${b.url||''}" placeholder="${b.type.toUpperCase()}のURL">`;
-                    inner += `<textarea class="ed-desc edit-area" placeholder="説明文" onfocus="editor.lastFocused=this">${b.description||''}</textarea>`;
+                    inner += `<input type="text" class="ed-url edit-area" value="${b.url||''}" placeholder="${b.type.toUpperCase()}のURLを入力">`;
+                    inner += `<textarea class="ed-desc edit-area" placeholder="キャプション・説明文" onfocus="editor.lastFocused=this">${b.description||''}</textarea>`;
                 } else if(b.type === 'table') {
-                    inner += `<div class="ed-table-cont" style="overflow-x:auto; margin-top:10px;"><table style="width:100%; border-collapse:collapse;">`;
-                    if(!b.data || b.data.length === 0) b.data = [['',''],['','']];
-                    b.data.forEach(row => {
+                    inner += `<div class="table-controls">
+                        <button class="t-btn" onclick="editor.modifyTable(this, 'row')">+ 行追加</button>
+                        <button class="t-btn" onclick="editor.modifyTable(this, 'col')">+ 列追加</button>
+                        <span style="font-size:11px; color:#666; margin-left:10px;">※セルを直接編集してください</span>
+                    </div>
+                    <div class="ed-table-cont" style="overflow-x:auto; margin-top:10px;">
+                        <table class="editor-inner-table" style="width:100%; border-collapse:collapse;">`;
+                    const tableData = b.data || [['',''],['','']];
+                    tableData.forEach(row => {
                         inner += `<tr>`;
                         row.forEach(cell => {
-                            inner += `<td style="border:1px solid #ccc; padding:2px;"><input type="text" class="ed-t-cell edit-area" value="${cell}" style="width:100%; min-width:100px;"></td>`;
+                            inner += `<td><input type="text" class="table-editor-cell" value="${cell}" style="width:90%"></td>`;
                         });
                         inner += `</tr>`;
                     });
                     inner += `</table></div>`;
-                    inner += `<div style="margin-top:5px; display:flex; gap:5px;"><button class="t-btn" onclick="editor.addTableRow(this)">+ 行追加</button><button class="t-btn" onclick="editor.addTableCol(this)">+ 列追加</button></div>`;
                 } else if(b.type === 'timeline') {
-                    inner += `<div class="ed-timeline-cont" style="margin-top:10px;">`;
-                    if(!b.data || b.data.length === 0) b.data = [{year:'', month:'', event:''}];
-                    b.data.forEach(item => {
-                        inner += `<div class="tl-item" style="display:flex; gap:5px; margin-bottom:5px;">
-                            <input type="text" class="tl-y edit-area" value="${item.year||''}" placeholder="年" style="width:20%">
-                            <input type="text" class="tl-m edit-area" value="${item.month||''}" placeholder="月" style="width:15%">
-                            <input type="text" class="tl-e edit-area" value="${item.event||''}" placeholder="出来事" style="width:55%">
+                    inner += `<div class="tl-editor-cont">`;
+                    const tlData = b.data || [{year:'', month:'', event:''}];
+                    tlData.forEach(item => {
+                        inner += `<div class="tl-edit-row" style="display:flex; gap:5px; margin-top:5px;">
+                            <input type="text" class="tl-y" placeholder="年" value="${item.year||''}" style="width:60px">
+                            <input type="text" class="tl-m" placeholder="月" value="${item.month||''}" style="width:40px">
+                            <input type="text" class="tl-e edit-area" placeholder="出来事" value="${item.event||''}" onfocus="editor.lastFocused=this">
                             <button class="t-btn" onclick="this.parentElement.remove()">×</button>
                         </div>`;
                     });
-                    inner += `</div><button class="t-btn" onclick="editor.addTimelineItem(this)">+ 出来事追加</button>`;
+                    inner += `</div><button class="t-btn" style="margin-top:10px;" onclick="editor.addTimelineRow(this)">+ 出来事追加</button>`;
                 }
                 
-                inner += `<button class="btn-delete" style="position:absolute; top:20px; right:45px;" onclick="this.parentElement.remove()"><i class="fas fa-trash"></i> 削除</button>`;
+                inner += `<button class="btn-delete" style="margin-top:15px;" onclick="this.parentElement.remove()">このブロックを削除</button>`;
                 div.innerHTML = inner;
                 cont.appendChild(div);
             },
-            
-            // 表の行追加
-            addTableRow(btn) {
-                const table = btn.parentElement.previousElementSibling.querySelector('table');
-                if(!table || table.rows.length === 0) return;
-                const colCount = table.rows[0].cells.length;
-                const tr = document.createElement('tr');
-                for(let i=0; i<colCount; i++) {
-                    tr.innerHTML += `<td style="border:1px solid #ccc; padding:2px;"><input type="text" class="ed-t-cell edit-area" style="width:100%; min-width:100px;"></td>`;
+
+            // 新機能: テーブル操作（行・列追加）
+            modifyTable(btn, mode) {
+                const table = btn.parentElement.nextElementSibling.querySelector('table');
+                if(mode === 'row') {
+                    const colCount = table.rows[0].cells.length;
+                    const row = table.insertRow();
+                    for(let i=0; i<colCount; i++) {
+                        row.insertCell().innerHTML = `<input type="text" class="table-editor-cell" value="" style="width:90%">`;
+                    }
+                } else {
+                    for(let i=0; i<table.rows.length; i++) {
+                        table.rows[i].insertCell().innerHTML = `<input type="text" class="table-editor-cell" value="" style="width:90%">`;
+                    }
                 }
-                table.appendChild(tr);
             },
-            // 表の列追加
-            addTableCol(btn) {
-                const table = btn.parentElement.previousElementSibling.querySelector('table');
-                if(!table) return;
-                Array.from(table.rows).forEach(tr => {
-                    tr.innerHTML += `<td style="border:1px solid #ccc; padding:2px;"><input type="text" class="ed-t-cell edit-area" style="width:100%; min-width:100px;"></td>`;
-                });
-            },
-            // 時系列の項目追加
-            addTimelineItem(btn) {
+
+            addTimelineRow(btn) {
                 const cont = btn.previousElementSibling;
                 const div = document.createElement('div');
-                div.className = 'tl-item';
-                div.style = "display:flex; gap:5px; margin-bottom:5px;";
-                div.innerHTML = `<input type="text" class="tl-y edit-area" placeholder="年" style="width:20%">
-                                 <input type="text" class="tl-m edit-area" placeholder="月" style="width:15%">
-                                 <input type="text" class="tl-e edit-area" placeholder="出来事" style="width:55%">
-                                 <button class="t-btn" onclick="this.parentElement.remove()">×</button>`;
+                div.className = 'tl-edit-row';
+                div.style = "display:flex; gap:5px; margin-top:5px;";
+                div.innerHTML = `<input type="text" class="tl-y" placeholder="年" style="width:60px"><input type="text" class="tl-m" placeholder="月" style="width:40px"><input type="text" class="tl-e edit-area" placeholder="出来事" onfocus="editor.lastFocused=this"><button class="t-btn" onclick="this.parentElement.remove()">×</button>`;
                 cont.appendChild(div);
             },
-            
-            // 欠落していた超重要部分：保存時にDOMからデータを取得する処理
+
             getBlocksFromDOM() {
                 const blocks = [];
                 document.querySelectorAll('.block-item').forEach(el => {
-                    const type = el.getAttribute('data-type');
-                    const title = el.querySelector('.ed-title') ? el.querySelector('.ed-title').value : '';
-                    const block = { type, title };
+                    const type = el.dataset.type;
+                    const block = { type: type, title: el.querySelector('.ed-title').value };
                     
                     if(type === 'section') {
                         block.text = el.querySelector('.ed-text').value;
                     } else if(['image','gif','pdf','youtube'].includes(type)) {
-                        block.url = el.querySelector('.ed-url') ? el.querySelector('.ed-url').value : '';
-                        block.description = el.querySelector('.ed-desc') ? el.querySelector('.ed-desc').value : '';
+                        block.url = el.querySelector('.ed-url').value;
+                        block.description = el.querySelector('.ed-desc').value;
                     } else if(type === 'table') {
-                        block.data = [];
+                        const rows = [];
                         el.querySelectorAll('tr').forEach(tr => {
-                            const row = [];
-                            tr.querySelectorAll('input').forEach(inp => row.push(inp.value));
-                            if(row.length > 0) block.data.push(row);
+                            const rowData = [];
+                            tr.querySelectorAll('.table-editor-cell').forEach(input => rowData.push(input.value));
+                            if(rowData.length > 0) rows.push(rowData);
                         });
+                        block.data = rows;
                     } else if(type === 'timeline') {
-                        block.data = [];
-                        el.querySelectorAll('.tl-item').forEach(item => {
-                            block.data.push({
-                                year: item.querySelector('.tl-y').value,
-                                month: item.querySelector('.tl-m').value,
-                                event: item.querySelector('.tl-e').value
+                        const items = [];
+                        el.querySelectorAll('.tl-edit-row').forEach(row => {
+                            items.push({
+                                year: row.querySelector('.tl-y').value,
+                                month: row.querySelector('.tl-m').value,
+                                event: row.querySelector('.tl-e').value
                             });
                         });
+                        block.data = items;
                     }
                     blocks.push(block);
                 });
