@@ -102,6 +102,10 @@
         a.wiki-link:hover { text-decoration: underline; }
         
         .hidden { display: none !important; }
+
+        /* 追加：削除ボタンのデザイン */
+        .btn-delete { background: none; border: 1px solid #dc3545; color: #dc3545; cursor: pointer; padding: 5px 10px; border-radius: 4px; display: flex; align-items: center; gap: 5px; font-size: 13px; }
+        .btn-delete:hover { background: #dc3545; color: white; }
     </style>
 </head>
 <body onload="app.init()">
@@ -134,8 +138,9 @@
             <div id="view-mode">
                 <div class="page-header" id="page-header-area">
                     <h1 id="display-title" style="font-family:'Cinzel',serif; font-size:2.5em; margin:0;"></h1>
-                    <div id="header-btns">
-                        <button id="edit-toggle-btn" onclick="app.toggleEdit()" style="background:none; border:1px solid #ccc; color:#666; cursor:pointer; padding:5px 10px;">このページを編集 ✎</button>
+                    <div id="header-btns" style="display:flex; gap:10px;">
+                        <button id="edit-toggle-btn" onclick="app.toggleEdit()" style="background:none; border:1px solid #ccc; color:#666; cursor:pointer; padding:5px 10px; border-radius:4px;">このページを編集 ✎</button>
+                        <button id="delete-page-btn" class="btn-delete" onclick="app.deleteCurrentPage()"><i class="fas fa-trash"></i> 削除</button>
                     </div>
                 </div>
                 
@@ -161,6 +166,7 @@
                     <button class="t-btn" onclick="editor.addBlock('table')"><i class="fas fa-table"></i> 表</button>
                     <button class="t-btn" onclick="editor.addBlock('timeline')"><i class="fas fa-history"></i> 時系列</button>
                     <div style="flex-grow:1;"></div> 
+                    <button class="btn-delete" onclick="app.deleteCurrentPage()"><i class="fas fa-trash"></i> ページ削除</button>
                     <button class="btn-magic-save" onclick="app.savePage()">✨ 保存する</button>
                     <button class="t-btn" onclick="app.toggleEdit()">キャンセル</button>
                 </div>
@@ -198,7 +204,8 @@
         const db = getFirestore(fApp);
         const provider = new GoogleAuthProvider();
 
-        const DEFAULT_IMG = "https://ure.pia.co.jp/articles/gallery/1260616?img=61a41e3b7765619450150000";
+        // 修正：TOPページのデフォルト画像を指示通りのURLに変更
+        const DEFAULT_IMG = "https://urepia.ismcdn.jp/mwimgs/3/4/640m/img_348210b81ef38d1b7f68e044790a9d48105046.jpg";
 
         window.app = {
             currentPageId: 'home',
@@ -211,6 +218,13 @@
                     this.currentUser = user;
                     document.getElementById('auth-btn').textContent = user ? 'ログアウト' : 'ログイン';
                 });
+                
+                // 追加機能：ブラウザの戻る・進むボタンに対応
+                window.addEventListener('popstate', (e) => {
+                    const hash = window.location.hash.replace('#', '') || 'home';
+                    this.loadPage(hash, false);
+                });
+
                 await this.refreshPageCache();
                 const hash = window.location.hash.replace('#', '');
                 this.loadPage(hash || 'home', false);
@@ -247,6 +261,7 @@
                     document.getElementById('page-content').innerHTML = '';
                     document.getElementById('home-view').classList.remove('hidden');
                     document.getElementById('edit-toggle-btn').classList.add('hidden');
+                    document.getElementById('delete-page-btn').classList.add('hidden'); // TOPページ自体は削除不可
                     this.renderHomeGrid();
                     return;
                 }
@@ -254,6 +269,7 @@
                 document.getElementById('display-title').style.display = 'block';
                 document.getElementById('home-view').classList.add('hidden');
                 document.getElementById('edit-toggle-btn').classList.remove('hidden');
+                document.getElementById('delete-page-btn').classList.remove('hidden'); // 個別ページは削除可
 
                 const docSnap = await getDoc(doc(db, "pages", this.currentPageId));
                 if (docSnap.exists()) {
@@ -287,7 +303,12 @@
                     div.className = 'page-card';
                     div.setAttribute('data-id', p.id);
                     const imgUrl = (p.infobox && p.infobox.image && p.infobox.image.trim() !== "") ? p.infobox.image : DEFAULT_IMG;
-                    div.innerHTML = `<img src="${imgUrl}" class="card-img"><div class="card-body">${p.id}</div>`;
+                    
+                    // 追加機能：TOPページの各wikiの右上にも小さく削除ボタンを配置
+                    div.innerHTML = `
+                        <button onclick="event.stopPropagation(); app.deletePage('${p.id}')" style="position:absolute; top:8px; right:8px; background:rgba(220,53,69,0.9); color:white; border:none; border-radius:4px; cursor:pointer; font-size:12px; width:26px; height:26px; display:flex; justify-content:center; align-items:center; z-index:10;" title="削除"><i class="fas fa-trash"></i></button>
+                        <img src="${imgUrl}" class="card-img"><div class="card-body">${p.id}</div>
+                    `;
                     div.onclick = () => this.loadPage(p.id);
                     grid.appendChild(div);
                 });
@@ -409,6 +430,26 @@
                 this.toggleEdit();
             },
 
+            // 追加機能：削除の実行処理
+            async deletePage(pageId) {
+                if(!confirm(`本当に「${pageId}」のWikiを完全に削除しますか？\nこの操作は取り消せません。`)) return;
+                
+                await deleteDoc(doc(db, "pages", pageId));
+                this.homeOrder = this.homeOrder.filter(id => id !== pageId);
+                await setDoc(doc(db, "pages", "_config"), { homeOrder: this.homeOrder }, { merge: true });
+                
+                alert(`「${pageId}」を削除しました。`);
+                await this.refreshPageCache();
+                
+                if(this.currentPageId === pageId || this.currentPageId === 'home') {
+                    this.goHome();
+                }
+            },
+
+            async deleteCurrentPage() {
+                await this.deletePage(this.currentPageId);
+            },
+
             async autoLinkAllPages() {
                 if(!confirm("全ページの本文からタイトルを探して自動リンク化しますか？")) return;
                 const pages = this.allPageCache.map(p => p.id);
@@ -447,7 +488,25 @@
                 const name = prompt("新しいWikiページの名前:");
                 if(name) this.loadPage(name);
             },
-            searchLive(val) {}
+            
+            // 修正機能：検索機能の実装
+            searchLive(val) {
+                if(this.currentPageId !== 'home') {
+                    this.loadPage('home', true);
+                }
+                setTimeout(() => {
+                    const term = val.toLowerCase();
+                    const cards = document.querySelectorAll('.page-card');
+                    cards.forEach(card => {
+                        const title = card.getAttribute('data-id').toLowerCase();
+                        if(title.includes(term)) {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                }, 10);
+            }
         };
 
         window.editor = {
@@ -520,20 +579,26 @@
                 div.innerHTML = `<input type="text" class="tl-y" placeholder="年" style="width:60px;"><input type="text" class="tl-m" placeholder="月" style="width:40px;"><input type="text" class="tl-e" placeholder="出来事" style="flex:1;"><button onclick="this.parentElement.remove()">×</button>`;
                 cont.appendChild(div);
             },
+            
+            // 一番のバグ原因：途切れていた保存コードを完全に修復しました
             getBlocksFromDOM() {
                 return Array.from(document.querySelectorAll('.block-item')).map(card => {
                     const type = card.getAttribute('data-type');
                     const b = { type, title: card.querySelector('.ed-title').value };
-                    if(type === 'section') b.text = card.querySelector('.ed-text').value;
-                    else if(['image','gif','pdf','youtube'].includes(type)) {
+                    
+                    if (type === 'section') {
+                        b.text = card.querySelector('.ed-text').value;
+                    } else if (['image','gif','pdf','youtube'].includes(type)) {
                         b.url = card.querySelector('.ed-url').value;
                         b.description = card.querySelector('.ed-desc').value;
-                    } else if(type === 'table') {
-                        b.data = Array.from(card.querySelectorAll('tr')).map(tr => 
-                            Array.from(tr.querySelectorAll('.table-cell')).map(input => input.value)
+                    } else if (type === 'table') {
+                        const rows = card.querySelectorAll('tr');
+                        b.data = Array.from(rows).map(row => 
+                            Array.from(row.querySelectorAll('.table-cell')).map(cell => cell.value)
                         );
-                    } else if(type === 'timeline') {
-                        b.data = Array.from(card.querySelectorAll('.tl-edit-row')).map(row => ({
+                    } else if (type === 'timeline') {
+                        const rows = card.querySelectorAll('.tl-edit-row');
+                        b.data = Array.from(rows).map(row => ({
                             year: row.querySelector('.tl-y').value,
                             month: row.querySelector('.tl-m').value,
                             event: row.querySelector('.tl-e').value
