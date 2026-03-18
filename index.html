@@ -78,7 +78,6 @@
         .editor-toolbar { background: #f8f9fa; border: 1px solid #ccc; padding: 10px; display: flex; gap: 8px; position: sticky; top: 65px; z-index: 900; margin-bottom: 20px; flex-wrap: wrap; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .t-btn { background: white; border: 1px solid #ccc; padding: 6px 10px; cursor: pointer; border-radius: 4px; font-size: 13px; display: flex; align-items: center; gap: 5px; }
         .t-btn:hover { background: #eee; }
-        .t-btn.format-btn { font-weight: bold; border-color: var(--disney-blue); color: var(--disney-blue); }
         
         .edit-card { border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; background: #fffdf5; border-radius: 8px; position: relative; }
         .edit-area { width: 100%; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; font-size: 15px; margin-top: 5px; }
@@ -106,9 +105,15 @@
         .btn-delete { background: none; border: 1px solid #dc3545; color: #dc3545; cursor: pointer; padding: 5px 10px; border-radius: 4px; display: flex; align-items: center; gap: 5px; font-size: 13px; }
         .btn-delete:hover { background: #dc3545; color: white; }
 
-        /* 新機能用のスタイル */
-        .table-controls { display: flex; gap: 5px; margin-bottom: 10px; background: #eee; padding: 5px; border-radius: 4px; }
-        .table-editor-cell { border: 1px solid #ccc; padding: 5px; min-width: 50px; }
+        /* 表編集用スタイル */
+        .table-editor-container { overflow-x: auto; margin: 10px 0; }
+        .table-edit-grid { border-collapse: collapse; }
+        .table-edit-grid td { border: 1px solid #ccc; padding: 0; }
+        .table-edit-grid input { border: none; padding: 8px; width: 100px; outline: none; }
+        .table-controls { margin-top: 5px; display: flex; gap: 5px; }
+
+        /* 時系列編集用 */
+        .tl-edit-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
     </style>
 </head>
 <body onload="app.init()">
@@ -124,7 +129,7 @@
         <div class="search-container">
             <div class="search-box">
                 <i class="fas fa-search"></i>
-                <input type="text" id="search-input" placeholder="Wiki内を検索..." oninput="app.searchLive(this.value)">
+                <input type="text" id="search-input" placeholder="Wiki内を検索（タイトル・別名）..." oninput="app.searchLive(this.value)">
             </div>
         </div>
         <button id="auth-btn" onclick="app.handleAuth()" style="background: var(--disney-gold); color: #000; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">ログイン</button>
@@ -157,9 +162,9 @@
 
             <div id="edit-mode" class="hidden">
                 <div class="editor-toolbar">
-                    <button class="t-btn format-btn" onclick="editor.insertTag('**')"><i class="fas fa-bold"></i> 太字</button>
-                    <button class="t-btn format-btn" onclick="editor.insertTag('*')"><i class="fas fa-italic"></i> 斜線</button>
-                    <button class="t-btn format-btn" onclick="editor.insertTag('<u>', '</u>')"><i class="fas fa-underline"></i> 下線</button>
+                    <button class="t-btn" onclick="editor.insertTag('**')"><i class="fas fa-bold"></i> 太字</button>
+                    <button class="t-btn" onclick="editor.insertTag('*')"><i class="fas fa-italic"></i> 斜線</button>
+                    <button class="t-btn" onclick="editor.insertTag('<u>', '</u>')"><i class="fas fa-underline"></i> 下線</button>
                     <div style="width: 1px; background: #ccc; margin: 0 5px;"></div>
                     <button class="t-btn" onclick="editor.addBlock('section')"><i class="fas fa-heading"></i> 見出し</button>
                     <button class="t-btn" onclick="editor.addBlock('image')"><i class="fas fa-image"></i> 画像</button>
@@ -169,17 +174,21 @@
                     <button class="t-btn" onclick="editor.addBlock('table')"><i class="fas fa-table"></i> 表</button>
                     <button class="t-btn" onclick="editor.addBlock('timeline')"><i class="fas fa-history"></i> 時系列</button>
                     <div style="flex-grow:1;"></div> 
-                    <button class="btn-delete" onclick="app.deleteCurrentPage()"><i class="fas fa-trash"></i> ページ削除</button>
                     <button class="btn-magic-save" onclick="app.savePage()">✨ 保存する</button>
                     <button class="t-btn" onclick="app.toggleEdit()">キャンセル</button>
                 </div>
 
                 <div class="edit-card" style="border: 2px solid var(--disney-blue);">
                     <h4 style="margin:0 0 10px 0;">✨ ページ基本設定</h4>
-                    <label>概要文 (冒頭の紹介):</label>
+                    <label>検索用の別名 (カンマ区切りで複数設定可能):</label>
+                    <input type="text" id="edit-aliases" class="edit-area" placeholder="例: ミッキーマウス, ミッキー, MK">
+                    
+                    <label style="margin-top:10px; display:block;">概要文 (冒頭の紹介):</label>
                     <textarea id="edit-summary" class="edit-area" style="height:80px;" onfocus="editor.lastFocused = this"></textarea>
+                    
                     <label style="margin-top:10px; display:block;">インフォ画像URL:</label>
                     <input type="text" id="edit-ib-img" class="edit-area" placeholder="https://...">
+                    
                     <div id="ib-rows-container" style="margin-top:10px;"></div>
                     <button class="t-btn" style="margin-top:10px;" onclick="editor.addIbRow()">+ データ項目を追加</button>
                 </div>
@@ -278,7 +287,7 @@
                     document.getElementById('display-title').innerText = this.currentPageId;
                     this.renderPageContent(this.data);
                 } else {
-                    this.data = { summary: '', infobox: {rows: []}, blocks: [] };
+                    this.data = { summary: '', aliases: '', infobox: {rows: []}, blocks: [] };
                     document.getElementById('display-title').innerText = this.currentPageId + " (未作成)";
                     document.getElementById('page-content').innerHTML = '<p>ページが存在しません。右上の編集ボタンから作成できます。</p>';
                 }
@@ -315,6 +324,8 @@
 
                 new Sortable(grid, {
                     animation: 150,
+                    delay: 500, // 長押し対応
+                    delayOnTouchOnly: true,
                     ghostClass: 'sortable-ghost',
                     onEnd: async () => {
                         const newOrder = Array.from(grid.querySelectorAll('.page-card')).map(el => el.dataset.id);
@@ -347,17 +358,17 @@
                     const div = document.createElement('div');
                     div.id = `block-${i}`;
                     if(b.type === 'section') {
-                        div.innerHTML = `<h2>${b.title}</h2><p>${this.parseWiki(b.text)}</p>`;
+                        div.innerHTML = `<h2>${this.parseWiki(b.title)}</h2><p>${this.parseWiki(b.text)}</p>`;
                         const li = document.createElement('li');
                         li.innerHTML = `<a class="wiki-link" onclick="document.getElementById('block-${i}').scrollIntoView()">${b.title}</a>`;
                         toc.appendChild(li);
                     } else if(b.type === 'image' || b.type === 'gif') {
-                        div.innerHTML = `<h3>${b.title || ''}</h3><img src="${b.url}" class="display-img" onclick="app.openMedia('${b.url}')"><p style="font-size:0.9em; color:#666;">${this.parseWiki(b.description || '')}</p>`;
+                        div.innerHTML = `<h3>${this.parseWiki(b.title || '')}</h3><img src="${b.url}" class="display-img" onclick="app.openMedia('${b.url}')"><p style="font-size:0.9em; color:#666;">${this.parseWiki(b.description || '')}</p>`;
                     } else if(b.type === 'pdf') {
-                        div.innerHTML = `<h3>${b.title || '資料'}</h3><iframe src="${b.url}" style="width:100%; height:500px; border:1px solid #ccc;"></iframe>`;
+                        div.innerHTML = `<h3>${this.parseWiki(b.title || '資料')}</h3><iframe src="${b.url}" style="width:100%; height:500px; border:1px solid #ccc;"></iframe>`;
                     } else if(b.type === 'youtube') {
                         const vid = b.url.includes('v=') ? b.url.split('v=')[1].split('&')[0] : b.url.split('/').pop();
-                        div.innerHTML = `<h3>${b.title || ''}</h3><div class="video-container"><iframe src="https://www.youtube.com/embed/${vid}" frameborder="0" allowfullscreen></iframe></div>`;
+                        div.innerHTML = `<h3>${this.parseWiki(b.title || '')}</h3><div class="video-container"><iframe src="https://www.youtube.com/embed/${vid}" frameborder="0" allowfullscreen></iframe></div>`;
                     } else if(b.type === 'table') {
                         let tbl = `<table class="wiki-table">`;
                         b.data.forEach((row, ri) => {
@@ -365,14 +376,14 @@
                             row.forEach(cell => tbl += `<${ri===0?'th':'td'}>${this.parseWiki(cell)}</${ri===0?'th':'td'}>`);
                             tbl += '</tr>';
                         });
-                        div.innerHTML = `<h3>${b.title || '情報表'}</h3>${tbl}</table>`;
+                        div.innerHTML = `<h3>${this.parseWiki(b.title || '情報表')}</h3>${tbl}</table>`;
                     } else if(b.type === 'timeline') {
                         let tl = `<div class="timeline-box">`;
                         b.data.forEach(item => {
                             const dateStr = `${item.year || ''}${item.month ? ' / ' + item.month : ''}`;
                             tl += `<div class="timeline-row"><div class="tl-date">${dateStr}</div><div class="tl-event">${this.parseWiki(item.event)}</div></div>`;
                         });
-                        div.innerHTML = `<h3>${b.title || '時系列'}</h3>${tl}</div>`;
+                        div.innerHTML = `<h3>${this.parseWiki(b.title || '時系列')}</h3>${tl}</div>`;
                     }
                     container.appendChild(div);
                 });
@@ -380,6 +391,7 @@
 
             parseWiki(text) {
                 if(!text) return '';
+                // XSS対策を考慮しつつ簡易パース
                 return text
                     .replace(/\[\[(.*?)\]\]/g, (m, p1) => `<a class="wiki-link" onclick="app.loadPage('${p1}')">${p1}</a>`)
                     .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
@@ -399,20 +411,29 @@
             },
 
             setupEditor() {
+                document.getElementById('edit-aliases').value = this.data.aliases || '';
                 document.getElementById('edit-summary').value = this.data.summary || '';
                 document.getElementById('edit-ib-img').value = this.data.infobox?.image || '';
                 const rowsCont = document.getElementById('ib-rows-container');
                 rowsCont.innerHTML = '';
                 this.data.infobox?.rows?.forEach(r => editor.addIbRow(r.key, r.val));
+                
                 const blockCont = document.getElementById('editor-blocks-list');
                 blockCont.innerHTML = '';
                 this.data.blocks?.forEach(b => editor.renderEditBlock(b));
-                new Sortable(blockCont, { handle: '.edit-card-handle', animation: 150 });
+                
+                new Sortable(blockCont, { 
+                    handle: '.edit-card-handle', 
+                    animation: 150,
+                    delay: 500,
+                    delayOnTouchOnly: true
+                });
             },
 
             async savePage() {
                 const blocks = editor.getBlocksFromDOM();
                 const saveData = {
+                    aliases: document.getElementById('edit-aliases').value,
                     summary: document.getElementById('edit-summary').value,
                     infobox: {
                         image: document.getElementById('edit-ib-img').value,
@@ -431,17 +452,14 @@
             },
 
             async deletePage(pageId) {
-                if(!confirm(`本当に「${pageId}」のWikiを完全に削除しますか？\nこの操作は取り消せません。`)) return;
+                if(!confirm(`本当に「${pageId}」のWikiを完全に削除しますか？`)) return;
                 await deleteDoc(doc(db, "pages", pageId));
                 this.homeOrder = this.homeOrder.filter(id => id !== pageId);
                 await setDoc(doc(db, "pages", "_config"), { homeOrder: this.homeOrder }, { merge: true });
-                
-                alert(`「${pageId}」を削除しました。`);
+                alert(`削除しました。`);
                 await this.refreshPageCache();
-                
-                if(this.currentPageId === pageId || this.currentPageId === 'home') {
-                    this.goHome();
-                }
+                if(this.currentPageId === pageId) this.goHome();
+                else this.renderHomeGrid();
             },
 
             async deleteCurrentPage() {
@@ -449,30 +467,53 @@
             },
 
             async autoLinkAllPages() {
-                if(!confirm("全ページの本文からタイトルを探して自動リンク化しますか？")) return;
-                const pages = this.allPageCache.map(p => p.id);
+                if(!confirm("全ページの本文・インフォ・見出しから自動リンク化しますか？")) return;
+                const pages = this.allPageCache;
+                
                 for(let pData of this.allPageCache) {
                     let changed = false;
-                    const updateBlock = (text) => {
+                    
+                    const scanAndReplace = (text) => {
+                        if(!text) return text;
                         let newText = text;
-                        pages.forEach(title => {
-                            if(title === pData.id) return;
-                            const regex = new RegExp(`(?<!\\[\\[)${title}(?!\\]\\])`, 'g');
-                            if(regex.test(newText)) {
-                                newText = newText.replace(regex, `[[${title}]]`);
-                                changed = true;
-                            }
+                        pages.forEach(targetPage => {
+                            if(targetPage.id === pData.id) return;
+                            
+                            // タイトルと別名の両方をチェック対象にする
+                            const keywords = [targetPage.id, ...(targetPage.aliases ? targetPage.aliases.split(',').map(s=>s.trim()) : [])].filter(s=>s.length>0);
+                            
+                            keywords.forEach(word => {
+                                // すでに[[ ]]で囲まれていない場合のみ置換
+                                const regex = new RegExp(`(?<!\\[\\[)${word}(?!\\]\\])`, 'g');
+                                if(regex.test(newText)) {
+                                    newText = newText.replace(regex, `[[${targetPage.id}]]`);
+                                    changed = true;
+                                }
+                            });
                         });
                         return newText;
                     };
-                    if(pData.summary) pData.summary = updateBlock(pData.summary);
+
+                    // 概要
+                    pData.summary = scanAndReplace(pData.summary);
+                    // インフォボックス
+                    pData.infobox?.rows?.forEach(r => { r.val = scanAndReplace(r.val); });
+                    // 各ブロック
                     pData.blocks?.forEach(b => {
-                        if(b.text) b.text = updateBlock(b.text);
-                        if(b.description) b.description = updateBlock(b.description);
+                        if(b.title) b.title = scanAndReplace(b.title);
+                        if(b.text) b.text = scanAndReplace(b.text);
+                        if(b.description) b.description = scanAndReplace(b.description);
+                        if(b.type === 'table') {
+                            b.data = b.data.map(row => row.map(cell => scanAndReplace(cell)));
+                        }
+                        if(b.type === 'timeline') {
+                            b.data.forEach(item => { item.event = scanAndReplace(item.event); });
+                        }
                     });
+
                     if(changed) await setDoc(doc(db, "pages", pData.id), pData, { merge: true });
                 }
-                alert("すべてのページに魔法のリンクを繋ぎました！");
+                alert("魔法のリンク結合が完了しました！");
                 location.reload();
             },
 
@@ -488,15 +529,17 @@
             },
             
             searchLive(val) {
-                if(this.currentPageId !== 'home') {
-                    this.loadPage('home', true);
-                }
+                if(this.currentPageId !== 'home') this.loadPage('home', true);
                 setTimeout(() => {
                     const term = val.toLowerCase();
                     const cards = document.querySelectorAll('.page-card');
                     cards.forEach(card => {
-                        const title = card.getAttribute('data-id').toLowerCase();
-                        if(title.includes(term)) {
+                        const id = card.getAttribute('data-id');
+                        const pageData = this.allPageCache.find(p => p.id === id);
+                        const title = id.toLowerCase();
+                        const alias = (pageData?.aliases || "").toLowerCase();
+                        
+                        if(title.includes(term) || alias.includes(term)) {
                             card.style.display = 'block';
                         } else {
                             card.style.display = 'none';
@@ -534,108 +577,97 @@
                 div.className = 'edit-card block-item';
                 div.setAttribute('data-type', b.type);
                 
-                let inner = `<div class="edit-card-handle">☰</div><h4 style="color:var(--disney-gold)">${b.type.toUpperCase()} ブロック</h4>`;
-                inner += `<input type="text" class="ed-title edit-area" value="${b.title||''}" placeholder="タイトル・見出し">`;
+                let inner = `<div class="edit-card-handle">☰</div><h4 style="color:var(--disney-gold)">${b.type.toUpperCase()}</h4>`;
+                inner += `<input type="text" class="ed-title edit-area" value="${b.title||''}" placeholder="タイトル・見出し" onfocus="editor.lastFocused=this">`;
                 
                 if(b.type === 'section') {
-                    inner += `<textarea class="ed-text edit-area" style="height:100px;" onfocus="editor.lastFocused=this" placeholder="本文を入力...">${b.text||''}</textarea>`;
+                    inner += `<textarea class="ed-text edit-area" style="height:100px;" placeholder="本文を入力..." onfocus="editor.lastFocused=this">${b.text||''}</textarea>`;
                 } else if(['image','gif','pdf','youtube'].includes(b.type)) {
-                    inner += `<input type="text" class="ed-url edit-area" value="${b.url||''}" placeholder="${b.type.toUpperCase()}のURLを入力">`;
-                    inner += `<textarea class="ed-desc edit-area" placeholder="キャプション・説明文" onfocus="editor.lastFocused=this">${b.description||''}</textarea>`;
+                    inner += `<input type="text" class="ed-url edit-area" value="${b.url||''}" placeholder="URL (https://...)">`;
+                    inner += `<input type="text" class="ed-desc edit-area" value="${b.description||''}" placeholder="説明文" onfocus="editor.lastFocused=this">`;
                 } else if(b.type === 'table') {
-                    inner += `<div class="table-controls">
-                        <button class="t-btn" onclick="editor.modifyTable(this, 'row')">+ 行追加</button>
-                        <button class="t-btn" onclick="editor.modifyTable(this, 'col')">+ 列追加</button>
-                        <span style="font-size:11px; color:#666; margin-left:10px;">※セルを直接編集してください</span>
-                    </div>
-                    <div class="ed-table-cont" style="overflow-x:auto; margin-top:10px;">
-                        <table class="editor-inner-table" style="width:100%; border-collapse:collapse;">`;
-                    const tableData = b.data || [['',''],['','']];
-                    tableData.forEach(row => {
-                        inner += `<tr>`;
-                        row.forEach(cell => {
-                            inner += `<td><input type="text" class="table-editor-cell" value="${cell}" style="width:90%"></td>`;
-                        });
-                        inner += `</tr>`;
+                    inner += `<div class="table-editor-container"><table class="table-edit-grid">`;
+                    b.data.forEach(row => {
+                        inner += `<tr>${row.map(cell => `<td><input type="text" value="${cell}" onfocus="editor.lastFocused=this"></td>`).join('')}</tr>`;
                     });
                     inner += `</table></div>`;
+                    inner += `<div class="table-controls">
+                        <button class="t-btn" onclick="editor.modifyTable(this,'row')">+ 行追加</button>
+                        <button class="t-btn" onclick="editor.modifyTable(this,'col')">+ 列追加</button>
+                        <button class="t-btn" onclick="this.closest('.table-editor-container').querySelector('tr:last-child')?.remove()">- 行削除</button>
+                    </div>`;
                 } else if(b.type === 'timeline') {
-                    inner += `<div class="tl-editor-cont">`;
-                    const tlData = b.data || [{year:'', month:'', event:''}];
-                    tlData.forEach(item => {
-                        inner += `<div class="tl-edit-row" style="display:flex; gap:5px; margin-top:5px;">
-                            <input type="text" class="tl-y" placeholder="年" value="${item.year||''}" style="width:60px">
-                            <input type="text" class="tl-m" placeholder="月" value="${item.month||''}" style="width:40px">
-                            <input type="text" class="tl-e edit-area" placeholder="出来事" value="${item.event||''}" onfocus="editor.lastFocused=this">
-                            <button class="t-btn" onclick="this.parentElement.remove()">×</button>
-                        </div>`;
+                    inner += `<div class="tl-editor-container">`;
+                    b.data.forEach(item => {
+                        inner += this.getTlRowHtml(item.year, item.month, item.event);
                     });
-                    inner += `</div><button class="t-btn" style="margin-top:10px;" onclick="editor.addTimelineRow(this)">+ 出来事追加</button>`;
+                    inner += `</div><button class="t-btn" style="margin-top:5px;" onclick="editor.addTlRow(this)">+ 出来事追加</button>
+                             <button class="t-btn" style="margin-top:5px; background:#e3f2fd;" onclick="editor.sortTimeline(this)">🕒 起こった順に並び替える</button>`;
                 }
                 
-                inner += `<button class="btn-delete" style="margin-top:15px;" onclick="this.parentElement.remove()">このブロックを削除</button>`;
+                inner += `<button class="btn-delete" style="margin-top:10px;" onclick="this.parentElement.remove()">削除</button>`;
                 div.innerHTML = inner;
                 cont.appendChild(div);
             },
-
-            // 新機能: テーブル操作（行・列追加）
-            modifyTable(btn, mode) {
-                const table = btn.parentElement.nextElementSibling.querySelector('table');
-                if(mode === 'row') {
-                    const colCount = table.rows[0].cells.length;
-                    const row = table.insertRow();
-                    for(let i=0; i<colCount; i++) {
-                        row.insertCell().innerHTML = `<input type="text" class="table-editor-cell" value="" style="width:90%">`;
-                    }
-                } else {
-                    for(let i=0; i<table.rows.length; i++) {
-                        table.rows[i].insertCell().innerHTML = `<input type="text" class="table-editor-cell" value="" style="width:90%">`;
-                    }
-                }
+            
+            getTlRowHtml(y='', m='', e='') {
+                return `<div class="tl-edit-row">
+                    <input type="number" class="tl-y" value="${y}" placeholder="年" style="width:60px;">
+                    <input type="number" class="tl-m" value="${m}" placeholder="月" style="width:40px;">
+                    <input type="text" class="tl-e edit-area" value="${e}" placeholder="出来事" onfocus="editor.lastFocused=this">
+                    <button class="t-btn" onclick="this.parentElement.remove()">×</button>
+                </div>`;
             },
-
-            addTimelineRow(btn) {
+            addTlRow(btn) {
                 const cont = btn.previousElementSibling;
                 const div = document.createElement('div');
-                div.className = 'tl-edit-row';
-                div.style = "display:flex; gap:5px; margin-top:5px;";
-                div.innerHTML = `<input type="text" class="tl-y" placeholder="年" style="width:60px"><input type="text" class="tl-m" placeholder="月" style="width:40px"><input type="text" class="tl-e edit-area" placeholder="出来事" onfocus="editor.lastFocused=this"><button class="t-btn" onclick="this.parentElement.remove()">×</button>`;
-                cont.appendChild(div);
+                div.innerHTML = this.getTlRowHtml();
+                cont.appendChild(div.firstChild);
             },
-
-            getBlocksFromDOM() {
-                const blocks = [];
-                document.querySelectorAll('.block-item').forEach(el => {
-                    const type = el.dataset.type;
-                    const block = { type: type, title: el.querySelector('.ed-title').value };
-                    
-                    if(type === 'section') {
-                        block.text = el.querySelector('.ed-text').value;
-                    } else if(['image','gif','pdf','youtube'].includes(type)) {
-                        block.url = el.querySelector('.ed-url').value;
-                        block.description = el.querySelector('.ed-desc').value;
-                    } else if(type === 'table') {
-                        const rows = [];
-                        el.querySelectorAll('tr').forEach(tr => {
-                            const rowData = [];
-                            tr.querySelectorAll('.table-editor-cell').forEach(input => rowData.push(input.value));
-                            if(rowData.length > 0) rows.push(rowData);
-                        });
-                        block.data = rows;
-                    } else if(type === 'timeline') {
-                        const items = [];
-                        el.querySelectorAll('.tl-edit-row').forEach(row => {
-                            items.push({
-                                year: row.querySelector('.tl-y').value,
-                                month: row.querySelector('.tl-m').value,
-                                event: row.querySelector('.tl-e').value
-                            });
-                        });
-                        block.data = items;
-                    }
-                    blocks.push(block);
+            sortTimeline(btn) {
+                const cont = btn.parentElement.querySelector('.tl-editor-container');
+                const rows = Array.from(cont.querySelectorAll('.tl-edit-row'));
+                rows.sort((a, b) => {
+                    const ay = parseInt(a.querySelector('.tl-y').value) || 0;
+                    const am = parseInt(a.querySelector('.tl-m').value) || 0;
+                    const by = parseInt(b.querySelector('.tl-y').value) || 0;
+                    const bm = parseInt(b.querySelector('.tl-m').value) || 0;
+                    return ay !== by ? ay - by : am - bm;
                 });
-                return blocks;
+                rows.forEach(r => cont.appendChild(r));
+            },
+            modifyTable(btn, type) {
+                const tbl = btn.closest('.edit-card').querySelector('.table-edit-grid');
+                if(type === 'row') {
+                    const cols = tbl.rows[0].cells.length;
+                    const row = tbl.insertRow();
+                    for(let i=0; i<cols; i++) row.insertCell().innerHTML = '<input type="text" onfocus="editor.lastFocused=this">';
+                } else {
+                    Array.from(tbl.rows).forEach(r => r.insertCell().innerHTML = '<input type="text" onfocus="editor.lastFocused=this">');
+                }
+            },
+            getBlocksFromDOM() {
+                return Array.from(document.querySelectorAll('.block-item')).map(div => {
+                    const type = div.dataset.type;
+                    const b = { type: type, title: div.querySelector('.ed-title').value };
+                    if(type === 'section') {
+                        b.text = div.querySelector('.ed-text').value;
+                    } else if(['image','gif','pdf','youtube'].includes(type)) {
+                        b.url = div.querySelector('.ed-url').value;
+                        b.description = div.querySelector('.ed-desc').value;
+                    } else if(type === 'table') {
+                        const rows = Array.from(div.querySelectorAll('tr'));
+                        b.data = rows.map(r => Array.from(r.querySelectorAll('input')).map(i => i.value));
+                    } else if(type === 'timeline') {
+                        const rows = Array.from(div.querySelectorAll('.tl-edit-row'));
+                        b.data = rows.map(r => ({
+                            year: r.querySelector('.tl-y').value,
+                            month: r.querySelector('.tl-m').value,
+                            event: r.querySelector('.tl-e').value
+                        }));
+                    }
+                    return b;
+                });
             }
         };
     </script>
