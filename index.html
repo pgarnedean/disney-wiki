@@ -114,6 +114,24 @@
 
         /* 時系列編集用 */
         .tl-edit-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
+
+        /* スマートフォン用レスポンシブデザイン追加 */
+        @media (max-width: 768px) {
+            .wrapper { flex-direction: column; margin: 0; box-shadow: none; min-height: 100vh; }
+            .sidebar { width: 100%; box-sizing: border-box; border-right: none; border-bottom: 1px solid #eee; display: flex; flex-direction: column; }
+            .main-content { padding: 15px; width: 100%; box-sizing: border-box; }
+            header { flex-direction: column; gap: 15px; padding: 15px; text-align: center; }
+            .search-container { width: 100%; }
+            .intro-container { flex-direction: column; gap: 20px; }
+            .infobox { width: 100%; box-sizing: border-box; }
+            .page-header { flex-direction: column; align-items: flex-start; gap: 15px; }
+            #display-title { font-size: 1.8em !important; }
+            #header-btns { width: 100%; display: flex; justify-content: space-between; }
+            .home-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+            .card-img { height: 120px; }
+            .editor-toolbar { position: static; }
+            .table-editor-container { overflow-x: auto; max-width: 100%; }
+        }
     </style>
 </head>
 <body onload="app.init()">
@@ -324,7 +342,7 @@
 
                 new Sortable(grid, {
                     animation: 150,
-                    delay: 500, // 長押し対応
+                    delay: 500,
                     delayOnTouchOnly: true,
                     ghostClass: 'sortable-ghost',
                     onEnd: async () => {
@@ -371,18 +389,22 @@
                         div.innerHTML = `<h3>${this.parseWiki(b.title || '')}</h3><div class="video-container"><iframe src="https://www.youtube.com/embed/${vid}" frameborder="0" allowfullscreen></iframe></div>`;
                     } else if(b.type === 'table') {
                         let tbl = `<table class="wiki-table">`;
-                        b.data.forEach((row, ri) => {
-                            tbl += '<tr>';
-                            row.forEach(cell => tbl += `<${ri===0?'th':'td'}>${this.parseWiki(cell)}</${ri===0?'th':'td'}>`);
-                            tbl += '</tr>';
-                        });
+                        if(b.data) {
+                            b.data.forEach((row, ri) => {
+                                tbl += '<tr>';
+                                row.forEach(cell => tbl += `<${ri===0?'th':'td'}>${this.parseWiki(cell)}</${ri===0?'th':'td'}>`);
+                                tbl += '</tr>';
+                            });
+                        }
                         div.innerHTML = `<h3>${this.parseWiki(b.title || '情報表')}</h3>${tbl}</table>`;
                     } else if(b.type === 'timeline') {
                         let tl = `<div class="timeline-box">`;
-                        b.data.forEach(item => {
-                            const dateStr = `${item.year || ''}${item.month ? ' / ' + item.month : ''}`;
-                            tl += `<div class="timeline-row"><div class="tl-date">${dateStr}</div><div class="tl-event">${this.parseWiki(item.event)}</div></div>`;
-                        });
+                        if(b.data) {
+                            b.data.forEach(item => {
+                                const dateStr = `${item.year || ''}${item.month ? ' / ' + item.month : ''}`;
+                                tl += `<div class="timeline-row"><div class="tl-date">${dateStr}</div><div class="tl-event">${this.parseWiki(item.event)}</div></div>`;
+                            });
+                        }
                         div.innerHTML = `<h3>${this.parseWiki(b.title || '時系列')}</h3>${tl}</div>`;
                     }
                     container.appendChild(div);
@@ -391,7 +413,6 @@
 
             parseWiki(text) {
                 if(!text) return '';
-                // XSS対策を考慮しつつ簡易パース
                 return text
                     .replace(/\[\[(.*?)\]\]/g, (m, p1) => `<a class="wiki-link" onclick="app.loadPage('${p1}')">${p1}</a>`)
                     .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
@@ -467,46 +488,61 @@
             },
 
             async autoLinkAllPages() {
-                if(!confirm("全ページの本文・インフォ・見出しから自動リンク化しますか？")) return;
+                if(!confirm("全ページの基本設定・見出し・本文から自動リンク化しますか？")) return;
                 const pages = this.allPageCache;
                 
+                // 誤置換を防ぐため、キーワードを長さ順（長い順）に並び替える
+                let allKeywords = [];
+                pages.forEach(p => {
+                    allKeywords.push({ word: p.id, targetId: p.id });
+                    if(p.aliases) {
+                        p.aliases.split(',').forEach(alias => {
+                            const a = alias.trim();
+                            if(a) allKeywords.push({ word: a, targetId: p.id });
+                        });
+                    }
+                });
+                allKeywords.sort((a, b) => b.word.length - a.word.length);
+
                 for(let pData of this.allPageCache) {
                     let changed = false;
                     
                     const scanAndReplace = (text) => {
                         if(!text) return text;
                         let newText = text;
-                        pages.forEach(targetPage => {
-                            if(targetPage.id === pData.id) return;
+                        allKeywords.forEach(kw => {
+                            if(kw.targetId === pData.id) return; // 自分自身のページへのリンクは避ける
                             
-                            // タイトルと別名の両方をチェック対象にする
-                            const keywords = [targetPage.id, ...(targetPage.aliases ? targetPage.aliases.split(',').map(s=>s.trim()) : [])].filter(s=>s.length>0);
-                            
-                            keywords.forEach(word => {
-                                // すでに[[ ]]で囲まれていない場合のみ置換
-                                const regex = new RegExp(`(?<!\\[\\[)${word}(?!\\]\\])`, 'g');
+                            const escapedWord = kw.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                            try {
+                                const regex = new RegExp(`(?<!\\[\\[)${escapedWord}(?!\\]\\])`, 'g');
                                 if(regex.test(newText)) {
-                                    newText = newText.replace(regex, `[[${targetPage.id}]]`);
+                                    newText = newText.replace(regex, `[[${kw.targetId}]]`);
                                     changed = true;
                                 }
-                            });
+                            } catch(e) {
+                                // Safari等一部環境のフォールバック
+                                const simpleRegex = new RegExp(escapedWord, 'g');
+                                if(simpleRegex.test(newText) && !newText.includes(`[[${kw.targetId}]]`)) {
+                                    newText = newText.replace(simpleRegex, `[[${kw.targetId}]]`);
+                                    changed = true;
+                                }
+                            }
                         });
                         return newText;
                     };
 
-                    // 概要
+                    // 概要、インフォボックス、各ブロック（見出しや表を含む）すべてに適用
                     pData.summary = scanAndReplace(pData.summary);
-                    // インフォボックス
                     pData.infobox?.rows?.forEach(r => { r.val = scanAndReplace(r.val); });
-                    // 各ブロック
                     pData.blocks?.forEach(b => {
                         if(b.title) b.title = scanAndReplace(b.title);
                         if(b.text) b.text = scanAndReplace(b.text);
                         if(b.description) b.description = scanAndReplace(b.description);
-                        if(b.type === 'table') {
+                        if(b.type === 'table' && b.data) {
                             b.data = b.data.map(row => row.map(cell => scanAndReplace(cell)));
                         }
-                        if(b.type === 'timeline') {
+                        if(b.type === 'timeline' && b.data) {
                             b.data.forEach(item => { item.event = scanAndReplace(item.event); });
                         }
                     });
@@ -559,115 +595,154 @@
                 const text = area.value;
                 area.value = text.substring(0, start) + startTag + text.substring(start, end) + endTag + text.substring(end);
                 area.focus();
+                area.setSelectionRange(start + startTag.length, start + startTag.length + (end - start));
             },
-            addBlock(type) {
-                const b = { type: type, title: '', text: '', url: '', description: '', data: type === 'table' ? [['項1','項2'],['データ1','データ2']] : (type === 'timeline' ? [{year:'2024', month:'1', event:''}] : []) };
-                this.renderEditBlock(b);
-            },
-            addIbRow(k='', v='') {
+            
+            addIbRow(k = '', v = '') {
+                const cont = document.getElementById('ib-rows-container');
                 const div = document.createElement('div');
                 div.className = 'ib-row';
-                div.style = "display:flex; gap:5px; margin-bottom:5px;";
-                div.innerHTML = `<input type="text" class="ib-k" value="${k}" placeholder="項目名" style="width:30%"><input type="text" class="ib-v" value="${v}" placeholder="内容" style="width:60%"><button class="t-btn" onclick="this.parentElement.remove()">×</button>`;
-                document.getElementById('ib-rows-container').appendChild(div);
+                div.style.cssText = 'display:flex; gap:5px; margin-bottom:5px;';
+                div.innerHTML = `
+                    <input type="text" class="ib-k edit-area" style="width:30%; margin:0;" placeholder="項目名" value="${k}">
+                    <input type="text" class="ib-v edit-area" style="width:60%; margin:0;" placeholder="内容" value="${v}">
+                    <button class="btn-delete" onclick="this.parentElement.remove()" style="margin:0;"><i class="fas fa-trash"></i></button>
+                `;
+                cont.appendChild(div);
             },
+
+            addBlock(type) {
+                const block = { type: type };
+                if(type === 'table') block.data = [['見出し1', '見出し2'], ['データ1', 'データ2']];
+                if(type === 'timeline') block.data = [{ year: '2023', month: '1', event: '出来事' }];
+                this.renderEditBlock(block);
+            },
+
             renderEditBlock(b) {
                 const cont = document.getElementById('editor-blocks-list');
                 const div = document.createElement('div');
                 div.className = 'edit-card block-item';
-                div.setAttribute('data-type', b.type);
+                div.dataset.type = b.type;
                 
-                let inner = `<div class="edit-card-handle">☰</div><h4 style="color:var(--disney-gold)">${b.type.toUpperCase()}</h4>`;
-                inner += `<input type="text" class="ed-title edit-area" value="${b.title||''}" placeholder="タイトル・見出し" onfocus="editor.lastFocused=this">`;
+                let inner = `<div class="edit-card-handle"><i class="fas fa-grip-lines"></i></div>`;
+                inner += `<div style="font-weight:bold; color:var(--disney-blue); margin-bottom:10px;">${b.type.toUpperCase()} ブロック</div>`;
                 
                 if(b.type === 'section') {
-                    inner += `<textarea class="ed-text edit-area" style="height:100px;" placeholder="本文を入力..." onfocus="editor.lastFocused=this">${b.text||''}</textarea>`;
-                } else if(['image','gif','pdf','youtube'].includes(b.type)) {
-                    inner += `<input type="text" class="ed-url edit-area" value="${b.url||''}" placeholder="URL (https://...)">`;
-                    inner += `<input type="text" class="ed-desc edit-area" value="${b.description||''}" placeholder="説明文" onfocus="editor.lastFocused=this">`;
+                    inner += `<input type="text" class="b-title edit-area" placeholder="見出し" value="${b.title || ''}">
+                              <textarea class="b-text edit-area" style="height:100px;" placeholder="本文" onfocus="editor.lastFocused = this">${b.text || ''}</textarea>`;
+                } else if(['image', 'gif', 'youtube', 'pdf'].includes(b.type)) {
+                    inner += `<input type="text" class="b-title edit-area" placeholder="タイトル (任意)" value="${b.title || ''}">
+                              <input type="text" class="b-url edit-area" placeholder="URL" value="${b.url || ''}">`;
+                    if(b.type === 'image' || b.type === 'gif') {
+                        inner += `<input type="text" class="b-desc edit-area" placeholder="画像の説明" value="${b.description || ''}">`;
+                    }
                 } else if(b.type === 'table') {
-                    inner += `<div class="table-editor-container"><table class="table-edit-grid">`;
-                    b.data.forEach(row => {
-                        inner += `<tr>${row.map(cell => `<td><input type="text" value="${cell}" onfocus="editor.lastFocused=this"></td>`).join('')}</tr>`;
+                    inner += `<input type="text" class="b-title edit-area" placeholder="表のタイトル (任意)" value="${b.title || ''}">`;
+                    inner += `<div class="table-editor-container"><table class="table-edit-grid"><tbody>`;
+                    
+                    const rows = b.data && b.data.length ? b.data : [['', ''], ['', '']];
+                    rows.forEach(row => {
+                        inner += `<tr>`;
+                        row.forEach(cell => {
+                            inner += `<td><input type="text" value="${cell}"></td>`;
+                        });
+                        inner += `<td><button class="btn-delete" onclick="this.closest('tr').remove()"><i class="fas fa-times"></i></button></td></tr>`;
                     });
-                    inner += `</table></div>`;
+                    inner += `</tbody></table></div>`;
                     inner += `<div class="table-controls">
-                        <button class="t-btn" onclick="editor.modifyTable(this,'row')">+ 行追加</button>
-                        <button class="t-btn" onclick="editor.modifyTable(this,'col')">+ 列追加</button>
-                        <button class="t-btn" onclick="this.closest('.table-editor-container').querySelector('tr:last-child')?.remove()">- 行削除</button>
-                    </div>`;
+                                <button class="t-btn" onclick="editor.addTableCol(this)">+ 列追加</button>
+                                <button class="t-btn" onclick="editor.addTableRow(this)">+ 行追加</button>
+                              </div>`;
                 } else if(b.type === 'timeline') {
-                    inner += `<div class="tl-editor-container">`;
-                    b.data.forEach(item => {
-                        inner += this.getTlRowHtml(item.year, item.month, item.event);
+                    inner += `<input type="text" class="b-title edit-area" placeholder="時系列のタイトル (任意)" value="${b.title || ''}">`;
+                    inner += `<div class="tl-container">`;
+                    const items = b.data && b.data.length ? b.data : [{ year:'', month:'', event:'' }];
+                    items.forEach(item => {
+                        inner += `<div class="tl-edit-row">
+                                    <input type="text" class="tl-y edit-area" style="width:60px; margin:0;" placeholder="年" value="${item.year || ''}">
+                                    <input type="text" class="tl-m edit-area" style="width:40px; margin:0;" placeholder="月" value="${item.month || ''}">
+                                    <input type="text" class="tl-e edit-area" style="flex:1; margin:0;" placeholder="出来事" value="${item.event || ''}">
+                                    <button class="btn-delete" onclick="this.parentElement.remove()" style="margin:0;"><i class="fas fa-times"></i></button>
+                                  </div>`;
                     });
-                    inner += `</div><button class="t-btn" style="margin-top:5px;" onclick="editor.addTlRow(this)">+ 出来事追加</button>
-                             <button class="t-btn" style="margin-top:5px; background:#e3f2fd;" onclick="editor.sortTimeline(this)">🕒 起こった順に並び替える</button>`;
+                    inner += `</div><button class="t-btn" style="margin-top:5px;" onclick="editor.addTlRow(this)">+ 出来事追加</button>`;
                 }
                 
-                inner += `<button class="btn-delete" style="margin-top:10px;" onclick="this.parentElement.remove()">削除</button>`;
+                inner += `<button class="btn-delete" style="margin-top:15px;" onclick="this.parentElement.remove()"><i class="fas fa-trash"></i> ブロックを削除</button>`;
                 div.innerHTML = inner;
                 cont.appendChild(div);
             },
+
+            addTableRow(btn) {
+                const tbody = btn.closest('.edit-card').querySelector('tbody');
+                const colCount = tbody.querySelector('tr') ? tbody.querySelector('tr').querySelectorAll('td').length - 1 : 2;
+                const tr = document.createElement('tr');
+                let tds = '';
+                for(let i=0; i<colCount; i++) tds += `<td><input type="text" value=""></td>`;
+                tds += `<td><button class="btn-delete" onclick="this.closest('tr').remove()"><i class="fas fa-times"></i></button></td>`;
+                tr.innerHTML = tds;
+                tbody.appendChild(tr);
+            },
             
-            getTlRowHtml(y='', m='', e='') {
-                return `<div class="tl-edit-row">
-                    <input type="number" class="tl-y" value="${y}" placeholder="年" style="width:60px;">
-                    <input type="number" class="tl-m" value="${m}" placeholder="月" style="width:40px;">
-                    <input type="text" class="tl-e edit-area" value="${e}" placeholder="出来事" onfocus="editor.lastFocused=this">
-                    <button class="t-btn" onclick="this.parentElement.remove()">×</button>
-                </div>`;
+            addTableCol(btn) {
+                const tbody = btn.closest('.edit-card').querySelector('tbody');
+                const rows = tbody.querySelectorAll('tr');
+                rows.forEach(tr => {
+                    const td = document.createElement('td');
+                    td.innerHTML = `<input type="text" value="">`;
+                    tr.insertBefore(td, tr.lastElementChild);
+                });
             },
+
             addTlRow(btn) {
-                const cont = btn.previousElementSibling;
+                const cont = btn.parentElement.querySelector('.tl-container');
                 const div = document.createElement('div');
-                div.innerHTML = this.getTlRowHtml();
-                cont.appendChild(div.firstChild);
+                div.className = 'tl-edit-row';
+                div.innerHTML = `<input type="text" class="tl-y edit-area" style="width:60px; margin:0;" placeholder="年">
+                                 <input type="text" class="tl-m edit-area" style="width:40px; margin:0;" placeholder="月">
+                                 <input type="text" class="tl-e edit-area" style="flex:1; margin:0;" placeholder="出来事">
+                                 <button class="btn-delete" onclick="this.parentElement.remove()" style="margin:0;"><i class="fas fa-times"></i></button>`;
+                cont.appendChild(div);
             },
-            sortTimeline(btn) {
-                const cont = btn.parentElement.querySelector('.tl-editor-container');
-                const rows = Array.from(cont.querySelectorAll('.tl-edit-row'));
-                rows.sort((a, b) => {
-                    const ay = parseInt(a.querySelector('.tl-y').value) || 0;
-                    const am = parseInt(a.querySelector('.tl-m').value) || 0;
-                    const by = parseInt(b.querySelector('.tl-y').value) || 0;
-                    const bm = parseInt(b.querySelector('.tl-m').value) || 0;
-                    return ay !== by ? ay - by : am - bm;
-                });
-                rows.forEach(r => cont.appendChild(r));
-            },
-            modifyTable(btn, type) {
-                const tbl = btn.closest('.edit-card').querySelector('.table-edit-grid');
-                if(type === 'row') {
-                    const cols = tbl.rows[0].cells.length;
-                    const row = tbl.insertRow();
-                    for(let i=0; i<cols; i++) row.insertCell().innerHTML = '<input type="text" onfocus="editor.lastFocused=this">';
-                } else {
-                    Array.from(tbl.rows).forEach(r => r.insertCell().innerHTML = '<input type="text" onfocus="editor.lastFocused=this">');
-                }
-            },
+
             getBlocksFromDOM() {
-                return Array.from(document.querySelectorAll('.block-item')).map(div => {
-                    const type = div.dataset.type;
-                    const b = { type: type, title: div.querySelector('.ed-title').value };
+                const blocks = [];
+                document.querySelectorAll('.block-item').forEach(el => {
+                    const type = el.dataset.type;
+                    const b = { type: type };
                     if(type === 'section') {
-                        b.text = div.querySelector('.ed-text').value;
-                    } else if(['image','gif','pdf','youtube'].includes(type)) {
-                        b.url = div.querySelector('.ed-url').value;
-                        b.description = div.querySelector('.ed-desc').value;
+                        b.title = el.querySelector('.b-title').value;
+                        b.text = el.querySelector('.b-text').value;
+                    } else if(['image', 'gif', 'youtube', 'pdf'].includes(type)) {
+                        b.title = el.querySelector('.b-title').value;
+                        b.url = el.querySelector('.b-url').value;
+                        if(type === 'image' || type === 'gif') {
+                            b.description = el.querySelector('.b-desc').value;
+                        }
                     } else if(type === 'table') {
-                        const rows = Array.from(div.querySelectorAll('tr'));
-                        b.data = rows.map(r => Array.from(r.querySelectorAll('input')).map(i => i.value));
+                        b.title = el.querySelector('.b-title').value;
+                        const tableData = [];
+                        el.querySelectorAll('tbody tr').forEach(tr => {
+                            const row = [];
+                            tr.querySelectorAll('td input').forEach(inp => row.push(inp.value));
+                            tableData.push(row);
+                        });
+                        b.data = tableData;
                     } else if(type === 'timeline') {
-                        const rows = Array.from(div.querySelectorAll('.tl-edit-row'));
-                        b.data = rows.map(r => ({
-                            year: r.querySelector('.tl-y').value,
-                            month: r.querySelector('.tl-m').value,
-                            event: r.querySelector('.tl-e').value
-                        }));
+                        b.title = el.querySelector('.b-title').value;
+                        const tlData = [];
+                        el.querySelectorAll('.tl-edit-row').forEach(row => {
+                            tlData.push({
+                                year: row.querySelector('.tl-y').value,
+                                month: row.querySelector('.tl-m').value,
+                                event: row.querySelector('.tl-e').value
+                            });
+                        });
+                        b.data = tlData;
                     }
-                    return b;
+                    blocks.push(b);
                 });
+                return blocks;
             }
         };
     </script>
