@@ -115,7 +115,7 @@
         /* 時系列編集用 */
         .tl-edit-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
 
-        /* スマートフォン用レスポンシブデザイン追加 */
+        /* スマートフォン用レスポンシブデザイン */
         @media (max-width: 768px) {
             .wrapper { flex-direction: column; margin: 0; box-shadow: none; min-height: 100vh; }
             .sidebar { width: 100%; box-sizing: border-box; border-right: none; border-bottom: 1px solid #eee; display: flex; flex-direction: column; }
@@ -218,7 +218,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBXGAvYQnGZGIALlfsE93C4vBMR41Lp6QA",
@@ -390,7 +390,12 @@
                     } else if(b.type === 'table') {
                         let tbl = `<table class="wiki-table">`;
                         if(b.data) {
-                            b.data.forEach((row, ri) => {
+                            // 旧形式（配列の配列）と新形式（オブジェクトの配列）の両方に対応
+                            let rows = b.data;
+                            if (b.data.length > 0 && b.data[0].cells) {
+                                rows = b.data.map(r => r.cells);
+                            }
+                            rows.forEach((row, ri) => {
                                 tbl += '<tr>';
                                 row.forEach(cell => tbl += `<${ri===0?'th':'td'}>${this.parseWiki(cell)}</${ri===0?'th':'td'}>`);
                                 tbl += '</tr>';
@@ -466,10 +471,17 @@
                     blocks: blocks,
                     updatedAt: new Date()
                 };
-                await setDoc(doc(db, "pages", this.currentPageId), saveData, { merge: true });
-                alert("保存完了✨");
-                await this.refreshPageCache();
-                this.toggleEdit();
+                
+                // 【不具合修正】保存処理
+                try {
+                    await setDoc(doc(db, "pages", this.currentPageId), saveData, { merge: true });
+                    alert("保存完了✨");
+                    await this.refreshPageCache();
+                    this.toggleEdit();
+                } catch (error) {
+                    console.error(error);
+                    alert("保存中にエラーが発生しました。");
+                }
             },
 
             async deletePage(pageId) {
@@ -488,10 +500,9 @@
             },
 
             async autoLinkAllPages() {
-                if(!confirm("全ページの基本設定・見出し・本文から自動リンク化しますか？")) return;
+                if(!confirm("概要文、見出し、本文、表など全てのテキストを自動リンク化しますか？")) return;
                 const pages = this.allPageCache;
                 
-                // 誤置換を防ぐため、キーワードを長さ順（長い順）に並び替える
                 let allKeywords = [];
                 pages.forEach(p => {
                     allKeywords.push({ word: p.id, targetId: p.id });
@@ -502,37 +513,39 @@
                         });
                     }
                 });
+                // 長い文字から順に置換（ミッキーよりミッキーマウスを優先）
                 allKeywords.sort((a, b) => b.word.length - a.word.length);
 
                 for(let pData of this.allPageCache) {
                     let changed = false;
                     
+                    // 【不具合修正】Safariでの正規表現エラーを回避するため、文字列を分割してから結合
                     const scanAndReplace = (text) => {
                         if(!text) return text;
-                        let newText = text;
-                        allKeywords.forEach(kw => {
-                            if(kw.targetId === pData.id) return; // 自分自身のページへのリンクは避ける
-                            
-                            const escapedWord = kw.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                            try {
-                                const regex = new RegExp(`(?<!\\[\\[)${escapedWord}(?!\\]\\])`, 'g');
-                                if(regex.test(newText)) {
-                                    newText = newText.replace(regex, `[[${kw.targetId}]]`);
-                                    changed = true;
-                                }
-                            } catch(e) {
-                                // Safari等一部環境のフォールバック
-                                const simpleRegex = new RegExp(escapedWord, 'g');
-                                if(simpleRegex.test(newText) && !newText.includes(`[[${kw.targetId}]]`)) {
-                                    newText = newText.replace(simpleRegex, `[[${kw.targetId}]]`);
-                                    changed = true;
-                                }
+                        let result = "";
+                        let segments = text.split(/(\[\[.*?\]\])/g);
+                        
+                        segments.forEach(segment => {
+                            if (segment.startsWith("[[") && segment.endsWith("]]")) {
+                                result += segment; // 既にリンク化されているものは無視
+                            } else {
+                                let newText = segment;
+                                allKeywords.forEach(kw => {
+                                    if(kw.targetId === pData.id) return; // 自分自身へのリンクは避ける
+                                    const escapedWord = kw.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                                    const simpleRegex = new RegExp(escapedWord, 'g');
+                                    if(simpleRegex.test(newText)) {
+                                        newText = newText.replace(simpleRegex, `[[${kw.targetId}]]`);
+                                        changed = true;
+                                    }
+                                });
+                                result += newText;
                             }
                         });
-                        return newText;
+                        return result;
                     };
 
-                    // 概要、インフォボックス、各ブロック（見出しや表を含む）すべてに適用
+                    // 基本設定・インフォ・見出し・すべてのブロックに確実に適用
                     pData.summary = scanAndReplace(pData.summary);
                     pData.infobox?.rows?.forEach(r => { r.val = scanAndReplace(r.val); });
                     pData.blocks?.forEach(b => {
@@ -540,7 +553,10 @@
                         if(b.text) b.text = scanAndReplace(b.text);
                         if(b.description) b.description = scanAndReplace(b.description);
                         if(b.type === 'table' && b.data) {
-                            b.data = b.data.map(row => row.map(cell => scanAndReplace(cell)));
+                            b.data = b.data.map(r => {
+                                let cells = r.cells ? r.cells : r;
+                                return { cells: cells.map(cell => scanAndReplace(cell)) };
+                            });
                         }
                         if(b.type === 'timeline' && b.data) {
                             b.data.forEach(item => { item.event = scanAndReplace(item.event); });
@@ -613,7 +629,7 @@
 
             addBlock(type) {
                 const block = { type: type };
-                if(type === 'table') block.data = [['見出し1', '見出し2'], ['データ1', 'データ2']];
+                if(type === 'table') block.data = [{cells:['見出し1', '見出し2']}, {cells:['データ1', 'データ2']}];
                 if(type === 'timeline') block.data = [{ year: '2023', month: '1', event: '出来事' }];
                 this.renderEditBlock(block);
             },
@@ -640,7 +656,12 @@
                     inner += `<input type="text" class="b-title edit-area" placeholder="表のタイトル (任意)" value="${b.title || ''}">`;
                     inner += `<div class="table-editor-container"><table class="table-edit-grid"><tbody>`;
                     
-                    const rows = b.data && b.data.length ? b.data : [['', ''], ['', '']];
+                    let rows = [['', ''], ['', '']];
+                    if (b.data && b.data.length > 0) {
+                        if (b.data[0].cells) rows = b.data.map(r => r.cells);
+                        else if (Array.isArray(b.data[0])) rows = b.data; // 古い形式の互換性
+                    }
+
                     rows.forEach(row => {
                         inner += `<tr>`;
                         row.forEach(cell => {
@@ -725,7 +746,8 @@
                         el.querySelectorAll('tbody tr').forEach(tr => {
                             const row = [];
                             tr.querySelectorAll('td input').forEach(inp => row.push(inp.value));
-                            tableData.push(row);
+                            // 【不具合修正】Firestoreで保存できるオブジェクト形式に変換して保存
+                            tableData.push({ cells: row });
                         });
                         b.data = tableData;
                     } else if(type === 'timeline') {
