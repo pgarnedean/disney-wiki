@@ -83,10 +83,12 @@
         .edit-area { width: 100%; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; font-size: 15px; margin-top: 5px; }
         .edit-card-handle { cursor: grab; color: var(--disney-gold); float: right; font-size: 24px; }
 
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 99999; display: none; justify-content: center; align-items: center; }
+        /* 画像モーダル用のスタイル（スクロール＆ズーム対応） */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 99999; display: none; overflow: auto; }
         .modal.active { display: flex; }
-        .modal-close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; }
-        .view-media { max-width: 90vw; max-height: 90vh; }
+        .modal-content-wrapper { margin: auto; padding: 40px 20px; display: flex; justify-content: center; align-items: center; min-height: 100%; width: 100%; box-sizing: border-box; }
+        .modal-close { position: fixed; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; z-index: 100000; }
+        .view-media { max-width: 90vw; max-height: 90vh; transition: width 0.1s ease-out; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
 
         .home-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-top: 30px; }
         .page-card { border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background: white; cursor: pointer; transition: 0.2s; position: relative; }
@@ -135,9 +137,11 @@
     </style>
 </head>
 <body onload="app.init()">
-    <div id="media-modal" class="modal" onclick="app.closeModal()">
-        <div class="modal-close">×</div>
-        <img id="modal-img" class="view-media">
+    <div id="media-modal" class="modal" onclick="if(event.target.id === 'media-modal' || event.target.className === 'modal-content-wrapper') app.closeModal()">
+        <div class="modal-close" onclick="app.closeModal()">×</div>
+        <div class="modal-content-wrapper">
+            <img id="modal-img" class="view-media">
+        </div>
     </div>
 
     <header>
@@ -252,6 +256,32 @@
                     const hash = window.location.hash.replace('#', '') || 'home';
                     this.loadPage(hash, false);
                 });
+
+                // Ctrl+スクロールでの画像ズーム機能の追加
+                const modal = document.getElementById('media-modal');
+                modal.addEventListener('wheel', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault(); // ブラウザ全体のズームを防ぐ
+                        const img = document.getElementById('modal-img');
+                        
+                        // 初回ズーム時に元のサイズを基準にする
+                        if (!img.dataset.zoomed) {
+                            img.dataset.zoomed = "true";
+                            img.style.width = img.clientWidth + 'px';
+                            img.style.maxWidth = 'none';
+                            img.style.maxHeight = 'none';
+                        }
+
+                        let width = parseFloat(img.style.width);
+                        if (e.deltaY < 0) {
+                            width *= 1.15; // 15%拡大
+                        } else {
+                            width /= 1.15; // 15%縮小
+                        }
+                        if (width < 100) width = 100; // 最小幅の制限
+                        img.style.width = width + 'px';
+                    }
+                }, { passive: false });
 
                 await this.refreshPageCache();
                 const hash = window.location.hash.replace('#', '');
@@ -390,7 +420,6 @@
                     } else if(b.type === 'table') {
                         let tbl = `<table class="wiki-table">`;
                         if(b.data) {
-                            // 旧形式（配列の配列）と新形式（オブジェクトの配列）の両方に対応
                             let rows = b.data;
                             if (b.data.length > 0 && b.data[0].cells) {
                                 rows = b.data.map(r => r.cells);
@@ -472,7 +501,6 @@
                     updatedAt: new Date()
                 };
                 
-                // 【不具合修正】保存処理
                 try {
                     await setDoc(doc(db, "pages", this.currentPageId), saveData, { merge: true });
                     alert("保存完了✨");
@@ -513,13 +541,11 @@
                         });
                     }
                 });
-                // 長い文字から順に置換（ミッキーよりミッキーマウスを優先）
                 allKeywords.sort((a, b) => b.word.length - a.word.length);
 
                 for(let pData of this.allPageCache) {
                     let changed = false;
                     
-                    // 【不具合修正】Safariでの正規表現エラーを回避するため、文字列を分割してから結合
                     const scanAndReplace = (text) => {
                         if(!text) return text;
                         let result = "";
@@ -527,11 +553,11 @@
                         
                         segments.forEach(segment => {
                             if (segment.startsWith("[[") && segment.endsWith("]]")) {
-                                result += segment; // 既にリンク化されているものは無視
+                                result += segment; 
                             } else {
                                 let newText = segment;
                                 allKeywords.forEach(kw => {
-                                    if(kw.targetId === pData.id) return; // 自分自身へのリンクは避ける
+                                    if(kw.targetId === pData.id) return;
                                     const escapedWord = kw.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                                     const simpleRegex = new RegExp(escapedWord, 'g');
                                     if(simpleRegex.test(newText)) {
@@ -545,7 +571,6 @@
                         return result;
                     };
 
-                    // 基本設定・インフォ・見出し・すべてのブロックに確実に適用
                     pData.summary = scanAndReplace(pData.summary);
                     pData.infobox?.rows?.forEach(r => { r.val = scanAndReplace(r.val); });
                     pData.blocks?.forEach(b => {
@@ -570,11 +595,22 @@
             },
 
             goHome() { this.loadPage('home'); },
+            
+            // ズーム状態をリセットしてメディアを開く
             openMedia(url) {
-                document.getElementById('modal-img').src = url;
+                const img = document.getElementById('modal-img');
+                img.src = url;
+                delete img.dataset.zoomed;
+                img.style.width = '';
+                img.style.maxWidth = '90vw';
+                img.style.maxHeight = '90vh';
                 document.getElementById('media-modal').classList.add('active');
             },
-            closeModal() { document.getElementById('media-modal').classList.remove('active'); },
+            
+            closeModal() { 
+                document.getElementById('media-modal').classList.remove('active'); 
+            },
+            
             createNewPage() {
                 const name = prompt("新しいWikiページの名前:");
                 if(name) this.loadPage(name);
@@ -659,7 +695,7 @@
                     let rows = [['', ''], ['', '']];
                     if (b.data && b.data.length > 0) {
                         if (b.data[0].cells) rows = b.data.map(r => r.cells);
-                        else if (Array.isArray(b.data[0])) rows = b.data; // 古い形式の互換性
+                        else if (Array.isArray(b.data[0])) rows = b.data;
                     }
 
                     rows.forEach(row => {
@@ -686,7 +722,11 @@
                                     <button class="btn-delete" onclick="this.parentElement.remove()" style="margin:0;"><i class="fas fa-times"></i></button>
                                   </div>`;
                     });
-                    inner += `</div><button class="t-btn" style="margin-top:5px;" onclick="editor.addTlRow(this)">+ 出来事追加</button>`;
+                    inner += `</div>
+                              <div style="display:flex; gap:10px; margin-top:10px;">
+                                <button class="t-btn" onclick="editor.addTlRow(this)">+ 出来事追加</button>
+                                <button class="t-btn" onclick="editor.sortTimeline(this)"><i class="fas fa-sort-numeric-down"></i> 年・月で並び替え</button>
+                              </div>`;
                 }
                 
                 inner += `<button class="btn-delete" style="margin-top:15px;" onclick="this.parentElement.remove()"><i class="fas fa-trash"></i> ブロックを削除</button>`;
@@ -716,7 +756,7 @@
             },
 
             addTlRow(btn) {
-                const cont = btn.parentElement.querySelector('.tl-container');
+                const cont = btn.closest('.edit-card').querySelector('.tl-container');
                 const div = document.createElement('div');
                 div.className = 'tl-edit-row';
                 div.innerHTML = `<input type="text" class="tl-y edit-area" style="width:60px; margin:0;" placeholder="年">
@@ -724,6 +764,29 @@
                                  <input type="text" class="tl-e edit-area" style="flex:1; margin:0;" placeholder="出来事">
                                  <button class="btn-delete" onclick="this.parentElement.remove()" style="margin:0;"><i class="fas fa-times"></i></button>`;
                 cont.appendChild(div);
+            },
+
+            // 時系列を年・月で昇順に並び替える機能
+            sortTimeline(btn) {
+                const cont = btn.closest('.edit-card').querySelector('.tl-container');
+                const rows = Array.from(cont.querySelectorAll('.tl-edit-row'));
+                
+                rows.sort((a, b) => {
+                    let yA = parseInt(a.querySelector('.tl-y').value);
+                    let yB = parseInt(b.querySelector('.tl-y').value);
+                    if (isNaN(yA)) yA = 99999; // 年が未入力の場合は一番下へ
+                    if (isNaN(yB)) yB = 99999;
+                    if (yA !== yB) return yA - yB;
+                    
+                    let mA = parseInt(a.querySelector('.tl-m').value);
+                    let mB = parseInt(b.querySelector('.tl-m').value);
+                    if (isNaN(mA)) mA = 99; // 月が未入力の場合は年の中の最後へ
+                    if (isNaN(mB)) mB = 99;
+                    return mA - mB;
+                });
+                
+                // DOMに再配置して並び替えを適用
+                rows.forEach(row => cont.appendChild(row));
             },
 
             getBlocksFromDOM() {
@@ -746,7 +809,6 @@
                         el.querySelectorAll('tbody tr').forEach(tr => {
                             const row = [];
                             tr.querySelectorAll('td input').forEach(inp => row.push(inp.value));
-                            // 【不具合修正】Firestoreで保存できるオブジェクト形式に変換して保存
                             tableData.push({ cells: row });
                         });
                         b.data = tableData;
