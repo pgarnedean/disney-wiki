@@ -139,7 +139,7 @@
 <body onload="app.init()">
     <div id="media-modal" class="modal" onclick="if(event.target.id === 'media-modal' || event.target.className === 'modal-content-wrapper') app.closeModal()">
         <div class="modal-close" onclick="app.closeModal()">×</div>
-        <div class="modal-content-wrapper">
+        <div class="modal-content-wrapper" id="modal-scroll-area">
             <img id="modal-img" class="view-media">
         </div>
     </div>
@@ -159,8 +159,10 @@
 
     <div class="wrapper">
         <aside class="sidebar">
-            <div style="font-weight:bold; border-bottom:1px solid var(--disney-gold); margin-bottom:10px;">目次</div>
-            <ul id="toc-list" style="list-style:none; padding:0; font-size:14px;"></ul>
+            <div id="sidebar-toc-container">
+                <div style="font-weight:bold; border-bottom:1px solid var(--disney-gold); margin-bottom:10px;">目次</div>
+                <ul id="toc-list" style="list-style:none; padding:0; font-size:14px;"></ul>
+            </div>
             <button onclick="app.createNewPage()" style="margin-top:30px; cursor:pointer; border:1px dashed var(--disney-gold); padding:10px; background:none; width:100%; color: var(--disney-blue);">+ 新規ページ作成</button>
         </aside>
 
@@ -257,29 +259,30 @@
                     this.loadPage(hash, false);
                 });
 
-                // Ctrl+スクロールでの画像ズーム機能の追加
+                // モーダル内でのスクロール・ズーム処理
                 const modal = document.getElementById('media-modal');
                 modal.addEventListener('wheel', (e) => {
+                    const img = document.getElementById('modal-img');
+                    
+                    // Ctrlキー：拡大縮小（ズーム）
                     if (e.ctrlKey || e.metaKey) {
-                        e.preventDefault(); // ブラウザ全体のズームを防ぐ
-                        const img = document.getElementById('modal-img');
-                        
-                        // 初回ズーム時に元のサイズを基準にする
+                        e.preventDefault();
                         if (!img.dataset.zoomed) {
                             img.dataset.zoomed = "true";
                             img.style.width = img.clientWidth + 'px';
                             img.style.maxWidth = 'none';
                             img.style.maxHeight = 'none';
                         }
-
                         let width = parseFloat(img.style.width);
-                        if (e.deltaY < 0) {
-                            width *= 1.15; // 15%拡大
-                        } else {
-                            width /= 1.15; // 15%縮小
-                        }
-                        if (width < 100) width = 100; // 最小幅の制限
+                        if (e.deltaY < 0) width *= 1.15;
+                        else width /= 1.15;
+                        if (width < 100) width = 100;
                         img.style.width = width + 'px';
+                    } 
+                    // Shiftキー：横スクロール
+                    else if (e.shiftKey) {
+                        e.preventDefault();
+                        modal.scrollLeft += e.deltaY;
                     }
                 }, { passive: false });
 
@@ -314,7 +317,11 @@
                 document.getElementById('edit-mode').classList.add('hidden');
                 window.scrollTo(0,0);
 
+                // TOPページかどうかの判定で目次を出し分け
+                const tocContainer = document.getElementById('sidebar-toc-container');
+
                 if(this.currentPageId === 'home') {
+                    tocContainer.classList.add('hidden'); // TOPページでは目次を隠す
                     document.getElementById('display-title').style.display = 'none';
                     document.getElementById('page-content').innerHTML = '';
                     document.getElementById('home-view').classList.remove('hidden');
@@ -324,6 +331,8 @@
                     return;
                 }
 
+                // Wikiページでは目次を表示
+                tocContainer.classList.remove('hidden');
                 document.getElementById('display-title').style.display = 'block';
                 document.getElementById('home-view').classList.add('hidden');
                 document.getElementById('edit-toggle-btn').classList.remove('hidden');
@@ -452,7 +461,7 @@
                     .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
                     .replace(/\*(.*?)\*/g, '<i>$1</i>')
                     .replace(/<u>(.*?)<\/u>/g, '<u>$1</u>')
-                    .replace(/\n/g, '<br>'); // 改行を<br>に変換して反映させる機能を追加
+                    .replace(/\n/g, '<br>'); // 改行反映機能の維持
             },
 
             toggleEdit() {
@@ -597,20 +606,22 @@
 
             goHome() { this.loadPage('home'); },
             
-            // ズーム状態をリセットしてメディアを開き、背景のスクロールを止める
             openMedia(url) {
-                document.body.classList.add('noscroll'); // 背景のスクロールを無効化
+                document.body.classList.add('noscroll');
                 const img = document.getElementById('modal-img');
                 img.src = url;
                 delete img.dataset.zoomed;
                 img.style.width = '';
                 img.style.maxWidth = '90vw';
                 img.style.maxHeight = '90vh';
-                document.getElementById('media-modal').classList.add('active');
+                const modal = document.getElementById('media-modal');
+                modal.classList.add('active');
+                modal.scrollLeft = 0; // スクロール位置のリセット
+                modal.scrollTop = 0;
             },
             
             closeModal() { 
-                document.body.classList.remove('noscroll'); // 背景のスクロールを再開
+                document.body.classList.remove('noscroll'); 
                 document.getElementById('media-modal').classList.remove('active'); 
             },
             
@@ -771,7 +782,6 @@
                 cont.appendChild(div);
             },
 
-            // 時系列を年・月・日で昇順に並び替える機能
             sortTimeline(btn) {
                 const cont = btn.closest('.edit-card').querySelector('.tl-container');
                 const rows = Array.from(cont.querySelectorAll('.tl-edit-row'));
@@ -779,24 +789,23 @@
                 rows.sort((a, b) => {
                     let yA = parseInt(a.querySelector('.tl-y').value);
                     let yB = parseInt(b.querySelector('.tl-y').value);
-                    if (isNaN(yA)) yA = 99999; // 年が未入力の場合は一番下へ
+                    if (isNaN(yA)) yA = 99999;
                     if (isNaN(yB)) yB = 99999;
                     if (yA !== yB) return yA - yB;
                     
                     let mA = parseInt(a.querySelector('.tl-m').value);
                     let mB = parseInt(b.querySelector('.tl-m').value);
-                    if (isNaN(mA)) mA = 99; // 月が未入力の場合は年の中の最後へ
+                    if (isNaN(mA)) mA = 99;
                     if (isNaN(mB)) mB = 99;
                     if (mA !== mB) return mA - mB;
 
                     let dA = parseInt(a.querySelector('.tl-d').value);
                     let dB = parseInt(b.querySelector('.tl-d').value);
-                    if (isNaN(dA)) dA = 99; // 日が未入力の場合は月の中の最後へ
+                    if (isNaN(dA)) dA = 99;
                     if (isNaN(dB)) dB = 99;
                     return dA - dB;
                 });
                 
-                // DOMに再配置して並び替えを適用
                 rows.forEach(row => cont.appendChild(row));
             },
 
