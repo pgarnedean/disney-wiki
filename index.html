@@ -435,7 +435,7 @@
                         let tl = `<div class="timeline-box">`;
                         if(b.data) {
                             b.data.forEach(item => {
-                                const dateStr = `${item.year || ''}${item.month ? ' / ' + item.month : ''}`;
+                                const dateStr = `${item.year || ''}${item.month ? ' / ' + item.month : ''}${item.day ? ' / ' + item.day : ''}`;
                                 tl += `<div class="timeline-row"><div class="tl-date">${dateStr}</div><div class="tl-event">${this.parseWiki(item.event)}</div></div>`;
                             });
                         }
@@ -451,7 +451,8 @@
                     .replace(/\[\[(.*?)\]\]/g, (m, p1) => `<a class="wiki-link" onclick="app.loadPage('${p1}')">${p1}</a>`)
                     .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
                     .replace(/\*(.*?)\*/g, '<i>$1</i>')
-                    .replace(/<u>(.*?)<\/u>/g, '<u>$1</u>');
+                    .replace(/<u>(.*?)<\/u>/g, '<u>$1</u>')
+                    .replace(/\n/g, '<br>'); // 改行を<br>に変換して反映させる機能を追加
             },
 
             toggleEdit() {
@@ -596,8 +597,9 @@
 
             goHome() { this.loadPage('home'); },
             
-            // ズーム状態をリセットしてメディアを開く
+            // ズーム状態をリセットしてメディアを開き、背景のスクロールを止める
             openMedia(url) {
+                document.body.classList.add('noscroll'); // 背景のスクロールを無効化
                 const img = document.getElementById('modal-img');
                 img.src = url;
                 delete img.dataset.zoomed;
@@ -608,6 +610,7 @@
             },
             
             closeModal() { 
+                document.body.classList.remove('noscroll'); // 背景のスクロールを再開
                 document.getElementById('media-modal').classList.remove('active'); 
             },
             
@@ -666,7 +669,7 @@
             addBlock(type) {
                 const block = { type: type };
                 if(type === 'table') block.data = [{cells:['見出し1', '見出し2']}, {cells:['データ1', 'データ2']}];
-                if(type === 'timeline') block.data = [{ year: '2023', month: '1', event: '出来事' }];
+                if(type === 'timeline') block.data = [{ year: '2023', month: '1', day: '1', event: '出来事' }];
                 this.renderEditBlock(block);
             },
 
@@ -713,11 +716,12 @@
                 } else if(b.type === 'timeline') {
                     inner += `<input type="text" class="b-title edit-area" placeholder="時系列のタイトル (任意)" value="${b.title || ''}">`;
                     inner += `<div class="tl-container">`;
-                    const items = b.data && b.data.length ? b.data : [{ year:'', month:'', event:'' }];
+                    const items = b.data && b.data.length ? b.data : [{ year:'', month:'', day:'', event:'' }];
                     items.forEach(item => {
                         inner += `<div class="tl-edit-row">
                                     <input type="text" class="tl-y edit-area" style="width:60px; margin:0;" placeholder="年" value="${item.year || ''}">
                                     <input type="text" class="tl-m edit-area" style="width:40px; margin:0;" placeholder="月" value="${item.month || ''}">
+                                    <input type="text" class="tl-d edit-area" style="width:40px; margin:0;" placeholder="日" value="${item.day || ''}">
                                     <input type="text" class="tl-e edit-area" style="flex:1; margin:0;" placeholder="出来事" value="${item.event || ''}">
                                     <button class="btn-delete" onclick="this.parentElement.remove()" style="margin:0;"><i class="fas fa-times"></i></button>
                                   </div>`;
@@ -725,7 +729,7 @@
                     inner += `</div>
                               <div style="display:flex; gap:10px; margin-top:10px;">
                                 <button class="t-btn" onclick="editor.addTlRow(this)">+ 出来事追加</button>
-                                <button class="t-btn" onclick="editor.sortTimeline(this)"><i class="fas fa-sort-numeric-down"></i> 年・月で並び替え</button>
+                                <button class="t-btn" onclick="editor.sortTimeline(this)"><i class="fas fa-sort-numeric-down"></i> 年・月・日で並び替え</button>
                               </div>`;
                 }
                 
@@ -761,12 +765,13 @@
                 div.className = 'tl-edit-row';
                 div.innerHTML = `<input type="text" class="tl-y edit-area" style="width:60px; margin:0;" placeholder="年">
                                  <input type="text" class="tl-m edit-area" style="width:40px; margin:0;" placeholder="月">
+                                 <input type="text" class="tl-d edit-area" style="width:40px; margin:0;" placeholder="日">
                                  <input type="text" class="tl-e edit-area" style="flex:1; margin:0;" placeholder="出来事">
                                  <button class="btn-delete" onclick="this.parentElement.remove()" style="margin:0;"><i class="fas fa-times"></i></button>`;
                 cont.appendChild(div);
             },
 
-            // 時系列を年・月で昇順に並び替える機能
+            // 時系列を年・月・日で昇順に並び替える機能
             sortTimeline(btn) {
                 const cont = btn.closest('.edit-card').querySelector('.tl-container');
                 const rows = Array.from(cont.querySelectorAll('.tl-edit-row'));
@@ -782,7 +787,13 @@
                     let mB = parseInt(b.querySelector('.tl-m').value);
                     if (isNaN(mA)) mA = 99; // 月が未入力の場合は年の中の最後へ
                     if (isNaN(mB)) mB = 99;
-                    return mA - mB;
+                    if (mA !== mB) return mA - mB;
+
+                    let dA = parseInt(a.querySelector('.tl-d').value);
+                    let dB = parseInt(b.querySelector('.tl-d').value);
+                    if (isNaN(dA)) dA = 99; // 日が未入力の場合は月の中の最後へ
+                    if (isNaN(dB)) dB = 99;
+                    return dA - dB;
                 });
                 
                 // DOMに再配置して並び替えを適用
@@ -819,6 +830,7 @@
                             tlData.push({
                                 year: row.querySelector('.tl-y').value,
                                 month: row.querySelector('.tl-m').value,
+                                day: row.querySelector('.tl-d').value,
                                 event: row.querySelector('.tl-e').value
                             });
                         });
