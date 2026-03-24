@@ -204,8 +204,8 @@
 
                 <div class="edit-card" style="border: 2px solid var(--disney-blue);">
                     <h4 style="margin:0 0 10px 0;">✨ ページ基本設定</h4>
-                    <label>検索用の別名 (カンマ区切りで複数設定可能):</label>
-                    <input type="text" id="edit-aliases" class="edit-area" placeholder="例: ミッキーマウス, ミッキー, MK">
+                    <label>検索用の別名・よみがな (カンマ区切りで複数設定可能):</label>
+                    <input type="text" id="edit-aliases" class="edit-area" placeholder="例: ミッキーマウス, みっきー, MK">
                     
                     <label style="margin-top:10px; display:block;">概要文 (冒頭の紹介):</label>
                     <textarea id="edit-summary" class="edit-area" style="height:80px;" onfocus="editor.lastFocused = this"></textarea>
@@ -630,18 +630,34 @@
                 if(name) this.loadPage(name);
             },
             
+            // ★ 今回のアップデート箇所：ひらがな・カタカナ・全角半角を吸収する高度な検索機能 ★
             searchLive(val) {
                 if(this.currentPageId !== 'home') this.loadPage('home', true);
                 setTimeout(() => {
-                    const term = val.toLowerCase();
+                    // 全角英数字を半角に、カタカナをひらがなに変換して統一する魔法の関数
+                    const normalizeText = (str) => {
+                        if (!str) return "";
+                        // 1. 全角英数字を半角に
+                        let s = str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, m => String.fromCharCode(m.charCodeAt(0) - 0xFEE0));
+                        // 2. カタカナをひらがなに
+                        s = s.replace(/[\u30a1-\u30f6]/g, m => String.fromCharCode(m.charCodeAt(0) - 0x60));
+                        // 3. 全て小文字に
+                        return s.toLowerCase();
+                    };
+
+                    const searchTerm = normalizeText(val);
+
                     const cards = document.querySelectorAll('.page-card');
                     cards.forEach(card => {
                         const id = card.getAttribute('data-id');
                         const pageData = this.allPageCache.find(p => p.id === id);
-                        const title = id.toLowerCase();
-                        const alias = (pageData?.aliases || "").toLowerCase();
                         
-                        if(title.includes(term) || alias.includes(term)) {
+                        // タイトルと別名も同じように正規化する
+                        const titleNorm = normalizeText(id);
+                        const aliasNorm = normalizeText(pageData?.aliases || "");
+                        
+                        // ひらがな・カタカナの区別なくマッチするかチェック
+                        if(titleNorm.includes(searchTerm) || aliasNorm.includes(searchTerm)) {
                             card.style.display = 'block';
                         } else {
                             card.style.display = 'none';
