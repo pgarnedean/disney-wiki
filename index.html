@@ -81,7 +81,8 @@
         
         .edit-card { border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; background: #fffdf5; border-radius: 8px; position: relative; }
         .edit-area { width: 100%; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; font-size: 15px; margin-top: 5px; }
-        .edit-card-handle { cursor: grab; color: var(--disney-gold); float: right; font-size: 24px; }
+        .edit-card-handle { cursor: grab; color: var(--disney-gold); float: right; font-size: 24px; padding: 5px; }
+        .edit-card-handle:active { cursor: grabbing; }
 
         /* 画像モーダル用のスタイル（スクロール＆ズーム対応） */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 99999; display: none; overflow: auto; }
@@ -90,6 +91,7 @@
         .modal-close { position: fixed; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; z-index: 100000; }
         .view-media { max-width: 90vw; max-height: 90vh; transition: width 0.1s ease-out; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
 
+        /* ホーム画面のグリッドとカード */
         .home-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-top: 30px; }
         .page-card { border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background: white; cursor: pointer; transition: 0.2s; position: relative; }
         .page-card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
@@ -107,15 +109,24 @@
         .btn-delete { background: none; border: 1px solid #dc3545; color: #dc3545; cursor: pointer; padding: 5px 10px; border-radius: 4px; display: flex; align-items: center; gap: 5px; font-size: 13px; }
         .btn-delete:hover { background: #dc3545; color: white; }
 
-        /* 表編集用スタイル */
         .table-editor-container { overflow-x: auto; margin: 10px 0; }
         .table-edit-grid { border-collapse: collapse; }
         .table-edit-grid td { border: 1px solid #ccc; padding: 0; }
         .table-edit-grid input { border: none; padding: 8px; width: 100px; outline: none; }
         .table-controls { margin-top: 5px; display: flex; gap: 5px; }
 
-        /* 時系列編集用 */
         .tl-edit-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
+
+        /* 新機能：並び替え中の完璧な追従と見た目の設定 */
+        .sortable-ghost { opacity: 0.3; background-color: #f0f8ff; border: 2px dashed var(--disney-gold) !important; }
+        .sortable-drag { 
+            opacity: 0.95 !important; 
+            cursor: grabbing !important; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3) !important; 
+            z-index: 100000 !important;
+            background: white !important;
+            transform: scale(1.02);
+        }
 
         /* スマートフォン用レスポンシブデザイン */
         @media (max-width: 768px) {
@@ -137,6 +148,7 @@
     </style>
 </head>
 <body onload="app.init()">
+
     <div id="media-modal" class="modal" onclick="if(event.target.id === 'media-modal' || event.target.className === 'modal-content-wrapper') app.closeModal()">
         <div class="modal-close" onclick="app.closeModal()">×</div>
         <div class="modal-content-wrapper" id="modal-scroll-area">
@@ -151,7 +163,7 @@
         <div class="search-container">
             <div class="search-box">
                 <i class="fas fa-search"></i>
-                <input type="text" id="search-input" placeholder="Wiki内を検索（タイトル・別名）..." oninput="app.searchLive(this.value)">
+                <input type="text" id="search-input" placeholder="Wiki内を検索（ひらがな対応）..." oninput="app.searchLive(this.value)">
             </div>
         </div>
         <button id="auth-btn" onclick="app.handleAuth()" style="background: var(--disney-gold); color: #000; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">ログイン</button>
@@ -163,7 +175,12 @@
                 <div style="font-weight:bold; border-bottom:1px solid var(--disney-gold); margin-bottom:10px;">目次</div>
                 <ul id="toc-list" style="list-style:none; padding:0; font-size:14px;"></ul>
             </div>
+            
             <button onclick="app.createNewPage()" style="margin-top:30px; cursor:pointer; border:1px dashed var(--disney-gold); padding:10px; background:none; width:100%; color: var(--disney-blue);">+ 新規ページ作成</button>
+            
+            <button id="toggle-sort-btn" onclick="app.toggleHomeSort()" class="hidden" style="margin-top:10px; cursor:pointer; border:1px solid #ccc; padding:10px; background:white; width:100%; color: #666; border-radius: 4px; transition: 0.3s; font-weight: bold;">
+                <i class="fas fa-sort"></i> ホームの並び替え: OFF
+            </button>
         </aside>
 
         <main class="main-content">
@@ -247,6 +264,8 @@
             data: {},
             allPageCache: [],
             homeOrder: [],
+            isHomeSortEnabled: false, // ホーム画面の並び替えモード判定
+            homeSortableObj: null,
 
             async init() {
                 onAuthStateChanged(auth, (user) => {
@@ -259,12 +278,10 @@
                     this.loadPage(hash, false);
                 });
 
-                // モーダル内でのスクロール・ズーム処理
+                // モーダルのスクロールとズームを維持
                 const modal = document.getElementById('media-modal');
                 modal.addEventListener('wheel', (e) => {
                     const img = document.getElementById('modal-img');
-                    
-                    // Ctrlキー：拡大縮小（ズーム）
                     if (e.ctrlKey || e.metaKey) {
                         e.preventDefault();
                         if (!img.dataset.zoomed) {
@@ -278,9 +295,7 @@
                         else width /= 1.15;
                         if (width < 100) width = 100;
                         img.style.width = width + 'px';
-                    } 
-                    // Shiftキー：横スクロール
-                    else if (e.shiftKey) {
+                    } else if (e.shiftKey) {
                         e.preventDefault();
                         modal.scrollLeft += e.deltaY;
                     }
@@ -317,11 +332,12 @@
                 document.getElementById('edit-mode').classList.add('hidden');
                 window.scrollTo(0,0);
 
-                // TOPページかどうかの判定で目次を出し分け
                 const tocContainer = document.getElementById('sidebar-toc-container');
+                const sortBtn = document.getElementById('toggle-sort-btn');
 
                 if(this.currentPageId === 'home') {
-                    tocContainer.classList.add('hidden'); // TOPページでは目次を隠す
+                    tocContainer.classList.add('hidden');
+                    sortBtn.classList.remove('hidden'); // ホームでは並び替えボタン表示
                     document.getElementById('display-title').style.display = 'none';
                     document.getElementById('page-content').innerHTML = '';
                     document.getElementById('home-view').classList.remove('hidden');
@@ -331,8 +347,8 @@
                     return;
                 }
 
-                // Wikiページでは目次を表示
                 tocContainer.classList.remove('hidden');
+                sortBtn.classList.add('hidden'); // 個別ページでは非表示
                 document.getElementById('display-title').style.display = 'block';
                 document.getElementById('home-view').classList.add('hidden');
                 document.getElementById('edit-toggle-btn').classList.remove('hidden');
@@ -347,6 +363,25 @@
                     this.data = { summary: '', aliases: '', infobox: {rows: []}, blocks: [] };
                     document.getElementById('display-title').innerText = this.currentPageId + " (未作成)";
                     document.getElementById('page-content').innerHTML = '<p>ページが存在しません。右上の編集ボタンから作成できます。</p>';
+                }
+            },
+
+            // ホーム画面の並び替えモードON/OFF切り替え
+            toggleHomeSort() {
+                this.isHomeSortEnabled = !this.isHomeSortEnabled;
+                const btn = document.getElementById('toggle-sort-btn');
+                if (this.isHomeSortEnabled) {
+                    btn.innerHTML = '<i class="fas fa-sort"></i> ホームの並び替え: ON';
+                    btn.style.background = 'var(--disney-gold)';
+                    btn.style.color = 'white';
+                    btn.style.border = '1px solid var(--disney-gold)';
+                    if(this.homeSortableObj) this.homeSortableObj.option('disabled', false);
+                } else {
+                    btn.innerHTML = '<i class="fas fa-sort"></i> ホームの並び替え: OFF';
+                    btn.style.background = 'white';
+                    btn.style.color = '#666';
+                    btn.style.border = '1px solid #ccc';
+                    if(this.homeSortableObj) this.homeSortableObj.option('disabled', true);
                 }
             },
 
@@ -379,11 +414,20 @@
                     grid.appendChild(div);
                 });
 
-                new Sortable(grid, {
+                // ★ 新機能：ホーム画面の指追従＆エッジスクロール対応の並び替え
+                if (this.homeSortableObj) this.homeSortableObj.destroy();
+                this.homeSortableObj = new Sortable(grid, {
+                    disabled: !this.isHomeSortEnabled, // ボタンがONの時だけ有効
                     animation: 150,
-                    delay: 500,
-                    delayOnTouchOnly: true,
+                    delay: 400, // 0.4秒長押し
+                    delayOnTouchOnly: false,
+                    touchStartThreshold: 5,
+                    forceFallback: true, // 指にピッタリ追従させる魔法
+                    fallbackClass: 'sortable-drag',
                     ghostClass: 'sortable-ghost',
+                    scroll: true, // 画面端でスクロール
+                    scrollSensitivity: 80, // スクロールが始まる判定エリア
+                    scrollSpeed: 15, // スクロールの速さ
                     onEnd: async () => {
                         const newOrder = Array.from(grid.querySelectorAll('.page-card')).map(el => el.dataset.id);
                         this.homeOrder = newOrder;
@@ -430,9 +474,7 @@
                         let tbl = `<table class="wiki-table">`;
                         if(b.data) {
                             let rows = b.data;
-                            if (b.data.length > 0 && b.data[0].cells) {
-                                rows = b.data.map(r => r.cells);
-                            }
+                            if (b.data.length > 0 && b.data[0].cells) rows = b.data.map(r => r.cells);
                             rows.forEach((row, ri) => {
                                 tbl += '<tr>';
                                 row.forEach(cell => tbl += `<${ri===0?'th':'td'}>${this.parseWiki(cell)}</${ri===0?'th':'td'}>`);
@@ -461,7 +503,7 @@
                     .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
                     .replace(/\*(.*?)\*/g, '<i>$1</i>')
                     .replace(/<u>(.*?)<\/u>/g, '<u>$1</u>')
-                    .replace(/\n/g, '<br>'); // 改行反映機能の維持
+                    .replace(/\n/g, '<br>');
             },
 
             toggleEdit() {
@@ -487,11 +529,19 @@
                 blockCont.innerHTML = '';
                 this.data.blocks?.forEach(b => editor.renderEditBlock(b));
                 
+                // ★ 新機能：編集画面のブロック並び替え（完璧な指追従＆スクロール対応）
                 new Sortable(blockCont, { 
                     handle: '.edit-card-handle', 
                     animation: 150,
-                    delay: 500,
-                    delayOnTouchOnly: true
+                    delay: 400, // 0.4秒長押し
+                    delayOnTouchOnly: false,
+                    touchStartThreshold: 5,
+                    forceFallback: true, // 指にピッタリ追従させる
+                    fallbackClass: 'sortable-drag',
+                    ghostClass: 'sortable-ghost',
+                    scroll: true, // 画面端でのゆっくりスクロール
+                    scrollSensitivity: 80,
+                    scrollSpeed: 15
                 });
             },
 
@@ -540,7 +590,6 @@
             async autoLinkAllPages() {
                 if(!confirm("概要文、見出し、本文、表など全てのテキストを自動リンク化しますか？")) return;
                 const pages = this.allPageCache;
-                
                 let allKeywords = [];
                 pages.forEach(p => {
                     allKeywords.push({ word: p.id, targetId: p.id });
@@ -555,12 +604,10 @@
 
                 for(let pData of this.allPageCache) {
                     let changed = false;
-                    
                     const scanAndReplace = (text) => {
                         if(!text) return text;
                         let result = "";
                         let segments = text.split(/(\[\[.*?\]\])/g);
-                        
                         segments.forEach(segment => {
                             if (segment.startsWith("[[") && segment.endsWith("]]")) {
                                 result += segment; 
@@ -597,7 +644,6 @@
                             b.data.forEach(item => { item.event = scanAndReplace(item.event); });
                         }
                     });
-
                     if(changed) await setDoc(doc(db, "pages", pData.id), pData, { merge: true });
                 }
                 alert("魔法のリンク結合が完了しました！");
@@ -616,7 +662,7 @@
                 img.style.maxHeight = '90vh';
                 const modal = document.getElementById('media-modal');
                 modal.classList.add('active');
-                modal.scrollLeft = 0; // スクロール位置のリセット
+                modal.scrollLeft = 0;
                 modal.scrollTop = 0;
             },
             
@@ -630,33 +676,28 @@
                 if(name) this.loadPage(name);
             },
             
-            // ★ 今回のアップデート箇所：ひらがな・カタカナ・全角半角を吸収する高度な検索機能 ★
+            // ★ ひらがな・カタカナ・全角半角を問わない検索（維持）
             searchLive(val) {
                 if(this.currentPageId !== 'home') this.loadPage('home', true);
                 setTimeout(() => {
-                    // 全角英数字を半角に、カタカナをひらがなに変換して統一する魔法の関数
+                    // ひらがなをカタカナに変換する魔法の関数
+                    const hiraToKata = (str) => str.replace(/[\u3041-\u3096]/g, match => String.fromCharCode(match.charCodeAt(0) + 0x60));
+                    
                     const normalizeText = (str) => {
                         if (!str) return "";
-                        // 1. 全角英数字を半角に
                         let s = str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, m => String.fromCharCode(m.charCodeAt(0) - 0xFEE0));
-                        // 2. カタカナをひらがなに
-                        s = s.replace(/[\u30a1-\u30f6]/g, m => String.fromCharCode(m.charCodeAt(0) - 0x60));
-                        // 3. 全て小文字に
+                        s = hiraToKata(s); // 検索文字もデータも一旦すべてカタカナに揃える
                         return s.toLowerCase();
                     };
 
                     const searchTerm = normalizeText(val);
-
                     const cards = document.querySelectorAll('.page-card');
                     cards.forEach(card => {
                         const id = card.getAttribute('data-id');
                         const pageData = this.allPageCache.find(p => p.id === id);
-                        
-                        // タイトルと別名も同じように正規化する
                         const titleNorm = normalizeText(id);
                         const aliasNorm = normalizeText(pageData?.aliases || "");
                         
-                        // ひらがな・カタカナの区別なくマッチするかチェック
                         if(titleNorm.includes(searchTerm) || aliasNorm.includes(searchTerm)) {
                             card.style.display = 'block';
                         } else {
@@ -706,7 +747,7 @@
                 div.className = 'edit-card block-item';
                 div.dataset.type = b.type;
                 
-                let inner = `<div class="edit-card-handle"><i class="fas fa-grip-lines"></i></div>`;
+                let inner = `<div class="edit-card-handle"><i class="fas fa-bars"></i></div>`;
                 inner += `<div style="font-weight:bold; color:var(--disney-blue); margin-bottom:10px;">${b.type.toUpperCase()} ブロック</div>`;
                 
                 if(b.type === 'section') {
@@ -798,6 +839,7 @@
                 cont.appendChild(div);
             },
 
+            // ★ 時系列ソート機能（維持）
             sortTimeline(btn) {
                 const cont = btn.closest('.edit-card').querySelector('.tl-container');
                 const rows = Array.from(cont.querySelectorAll('.tl-edit-row'));
