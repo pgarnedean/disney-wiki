@@ -83,7 +83,7 @@
         .edit-area { width: 100%; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; font-size: 15px; margin-top: 5px; }
         .edit-card-handle { cursor: grab; color: var(--disney-gold); float: right; font-size: 24px; }
 
-        /* 画像モーダル用のスタイル */
+        /* 画像モーダル用のスタイル（スクロール＆ズーム対応） */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 99999; display: none; overflow: auto; }
         .modal.active { display: flex; }
         .modal-content-wrapper { margin: auto; padding: 40px 20px; display: flex; justify-content: center; align-items: center; min-height: 100%; width: 100%; box-sizing: border-box; }
@@ -117,21 +117,6 @@
         /* 時系列編集用 */
         .tl-edit-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
 
-        /* ★新規追加: AIチャットUI用のスタイル（他のデザインは一切崩しません）★ */
-        .ai-fab { position: fixed; bottom: 30px; left: 30px; background: linear-gradient(135deg, #8e2de2, #4a00e0); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 9999; transition: 0.3s; }
-        .ai-fab:hover { transform: scale(1.1); }
-        .ai-chat-window { position: fixed; bottom: 100px; left: 30px; width: 350px; height: 500px; background: white; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); z-index: 9998; display: flex; flex-direction: column; overflow: hidden; transition: 0.3s; opacity: 0; pointer-events: none; transform: translateY(20px); border: 2px solid var(--disney-gold); }
-        .ai-chat-window.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
-        .ai-header { background: var(--disney-blue); color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-        .ai-close { cursor: pointer; color: white; font-size: 20px; }
-        .ai-messages { flex: 1; padding: 15px; overflow-y: auto; background: #f9f9f9; display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
-        .ai-msg { max-width: 85%; padding: 10px; border-radius: 8px; line-height: 1.4; word-break: break-word; }
-        .ai-msg.user { align-self: flex-end; background: var(--disney-gold); color: white; border-bottom-right-radius: 0; }
-        .ai-msg.bot { align-self: flex-start; background: white; border: 1px solid #ccc; color: #333; border-bottom-left-radius: 0; }
-        .ai-input-area { display: flex; padding: 10px; background: white; border-top: 1px solid #eee; gap: 10px; }
-        .ai-input { flex: 1; padding: 8px 15px; border: 1px solid #ccc; border-radius: 20px; outline: none; }
-        .ai-send { background: none; border: none; color: var(--disney-blue); font-size: 20px; cursor: pointer; }
-
         /* スマートフォン用レスポンシブデザイン */
         @media (max-width: 768px) {
             .wrapper { flex-direction: column; margin: 0; box-shadow: none; min-height: 100vh; }
@@ -148,9 +133,6 @@
             .card-img { height: 120px; }
             .editor-toolbar { position: static; }
             .table-editor-container { overflow-x: auto; max-width: 100%; }
-            /* スマホ時のAIチャットUI調整 */
-            .ai-fab { bottom: 20px; left: 20px; width: 50px; height: 50px; font-size: 20px; }
-            .ai-chat-window { left: 10px; right: 10px; width: auto; bottom: 80px; height: 60vh; }
         }
     </style>
 </head>
@@ -159,23 +141,6 @@
         <div class="modal-close" onclick="app.closeModal()">×</div>
         <div class="modal-content-wrapper" id="modal-scroll-area">
             <img id="modal-img" class="view-media">
-        </div>
-    </div>
-
-    <div class="ai-fab" onclick="app.toggleAI()">
-        <i class="fas fa-magic"></i>
-    </div>
-    <div class="ai-chat-window" id="ai-chat">
-        <div class="ai-header">
-            <span>✨ 魔法のAIアシスタント</span>
-            <i class="fas fa-times ai-close" onclick="app.toggleAI()"></i>
-        </div>
-        <div class="ai-messages" id="ai-messages">
-            <div class="ai-msg bot">こんにちは！このWikiに書かれていることなら何でも答えますよ。質問を入力してください。</div>
-        </div>
-        <div class="ai-input-area">
-            <input type="text" id="ai-input" class="ai-input" placeholder="質問を入力..." onkeypress="if(event.key==='Enter') app.sendAI()">
-            <button class="ai-send" onclick="app.sendAI()"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>
 
@@ -352,10 +317,11 @@
                 document.getElementById('edit-mode').classList.add('hidden');
                 window.scrollTo(0,0);
 
+                // TOPページかどうかの判定で目次を出し分け
                 const tocContainer = document.getElementById('sidebar-toc-container');
 
                 if(this.currentPageId === 'home') {
-                    tocContainer.classList.add('hidden');
+                    tocContainer.classList.add('hidden'); // TOPページでは目次を隠す
                     document.getElementById('display-title').style.display = 'none';
                     document.getElementById('page-content').innerHTML = '';
                     document.getElementById('home-view').classList.remove('hidden');
@@ -365,6 +331,7 @@
                     return;
                 }
 
+                // Wikiページでは目次を表示
                 tocContainer.classList.remove('hidden');
                 document.getElementById('display-title').style.display = 'block';
                 document.getElementById('home-view').classList.add('hidden');
@@ -494,7 +461,7 @@
                     .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
                     .replace(/\*(.*?)\*/g, '<i>$1</i>')
                     .replace(/<u>(.*?)<\/u>/g, '<u>$1</u>')
-                    .replace(/\n/g, '<br>');
+                    .replace(/\n/g, '<br>'); // 改行反映機能の維持
             },
 
             toggleEdit() {
@@ -649,7 +616,7 @@
                 img.style.maxHeight = '90vh';
                 const modal = document.getElementById('media-modal');
                 modal.classList.add('active');
-                modal.scrollLeft = 0;
+                modal.scrollLeft = 0; // スクロール位置のリセット
                 modal.scrollTop = 0;
             },
             
@@ -663,24 +630,33 @@
                 if(name) this.loadPage(name);
             },
             
+            // ★ 今回のアップデート箇所：ひらがな・カタカナ・全角半角を吸収する高度な検索機能 ★
             searchLive(val) {
                 if(this.currentPageId !== 'home') this.loadPage('home', true);
                 setTimeout(() => {
+                    // 全角英数字を半角に、カタカナをひらがなに変換して統一する魔法の関数
                     const normalizeText = (str) => {
                         if (!str) return "";
+                        // 1. 全角英数字を半角に
                         let s = str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, m => String.fromCharCode(m.charCodeAt(0) - 0xFEE0));
+                        // 2. カタカナをひらがなに
                         s = s.replace(/[\u30a1-\u30f6]/g, m => String.fromCharCode(m.charCodeAt(0) - 0x60));
+                        // 3. 全て小文字に
                         return s.toLowerCase();
                     };
 
                     const searchTerm = normalizeText(val);
+
                     const cards = document.querySelectorAll('.page-card');
                     cards.forEach(card => {
                         const id = card.getAttribute('data-id');
                         const pageData = this.allPageCache.find(p => p.id === id);
+                        
+                        // タイトルと別名も同じように正規化する
                         const titleNorm = normalizeText(id);
                         const aliasNorm = normalizeText(pageData?.aliases || "");
                         
+                        // ひらがな・カタカナの区別なくマッチするかチェック
                         if(titleNorm.includes(searchTerm) || aliasNorm.includes(searchTerm)) {
                             card.style.display = 'block';
                         } else {
@@ -688,87 +664,6 @@
                         }
                     });
                 }, 10);
-            },
-
-            // ★ 新規追加: AIチャットの開閉 ★
-            toggleAI() {
-                const chat = document.getElementById('ai-chat');
-                chat.classList.toggle('active');
-            },
-
-            // ★ 新規追加: AIへのメッセージ送信と回答取得 ★
-            async sendAI() {
-                const inputEl = document.getElementById('ai-input');
-                const inputStr = inputEl.value.trim();
-                if(!inputStr) return;
-
-                inputEl.value = '';
-                const msgContainer = document.getElementById('ai-messages');
-                
-                // ユーザーの質問を表示
-                const uDiv = document.createElement('div');
-                uDiv.className = 'ai-msg user';
-                uDiv.textContent = inputStr;
-                msgContainer.appendChild(uDiv);
-                msgContainer.scrollTop = msgContainer.scrollHeight;
-
-                // AIの「考え中」を表示
-                const bDiv = document.createElement('div');
-                bDiv.className = 'ai-msg bot';
-                bDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 魔法の鏡に尋ねています...';
-                msgContainer.appendChild(bDiv);
-                msgContainer.scrollTop = msgContainer.scrollHeight;
-
-                // Wikiの全データを1つのテキストにまとめる（AIに読ませるための資料）
-                let context = "【Wikiの全データ】\n";
-                this.allPageCache.forEach(p => {
-                    context += `■ タイトル: ${p.id} (別名: ${p.aliases||''})\n概要: ${p.summary||''}\n`;
-                    p.blocks?.forEach(b => {
-                        if(b.type === 'section') context += `見出し: ${b.title||''}\n本文: ${b.text||''}\n`;
-                        if(b.type === 'table' && b.data) {
-                            let rows = b.data[0].cells ? b.data.map(r => r.cells) : b.data;
-                            context += `表データ: ` + rows.map(r => r.join(',')).join(' | ') + `\n`;
-                        }
-                        if(b.type === 'timeline' && b.data) {
-                            context += `時系列: ` + b.data.map(d=>`${d.year||''}/${d.month||''}/${d.day||''} ${d.event||''}`).join(', ') + `\n`;
-                        }
-                    });
-                    context += `\n`;
-                });
-
-                // AIへの絶対的な命令（プロンプト）
-                const systemPrompt = `あなたはWiki専用のAIアシスタントです。以下の【Wikiの全データ】の内容"のみ"を使って、ユーザーの質問に答えてください。もしWikiに書かれていないことを聞かれたら、「Wikiにその情報はありません」と丁寧に答えてください。推測や一般常識で補ってはいけません。\n\n${context}`;
-
-                try {
-                    // ★★★ ここに取得したAPIキーを貼り付けます ★★★
-                    const API_KEY = "AIzaSyByhr3AHRglH5ooBvttAXqc1QZsZsw-1a8"; 
-
-                    if(API_KEY === "YOUR_GEMINI_API_KEY_HERE") {
-                        bDiv.innerHTML = "<b>【AIからのお願い】</b><br>私を動かすには、コード内の <code>YOUR_GEMINI_API_KEY_HERE</code> という文字を、取得したAPIキーに書き換える必要があります！";
-                        msgContainer.scrollTop = msgContainer.scrollHeight;
-                        return;
-                    }
-
-                    // Google Gemini APIにデータを送って返事をもらう
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [
-                                { role: 'user', parts: [{ text: systemPrompt + "\n\n質問: " + inputStr }] }
-                            ]
-                        })
-                    });
-
-                    const data = await res.json();
-                    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "エラーが発生しました。魔法の杖の調子が悪いようです。";
-                    bDiv.innerHTML = this.parseWiki(text); // Wikiリンクも反映させる
-                    
-                } catch (err) {
-                    console.error(err);
-                    bDiv.textContent = "通信に失敗しました。インターネット接続を確認してください。";
-                }
-                msgContainer.scrollTop = msgContainer.scrollHeight;
             }
         };
 
