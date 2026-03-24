@@ -117,7 +117,7 @@
 
         .tl-edit-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
 
-        /* 新機能：並び替え中の完璧な追従と見た目の設定 */
+        /* 並び替え中の完璧な追従と見た目の設定 */
         .sortable-ghost { opacity: 0.3; background-color: #f0f8ff; border: 2px dashed var(--disney-gold) !important; }
         .sortable-drag { 
             opacity: 0.95 !important; 
@@ -126,6 +126,7 @@
             z-index: 100000 !important;
             background: white !important;
             transform: scale(1.02);
+            margin: 0 !important; /* ズレ防止用の追加コード */
         }
 
         /* スマートフォン用レスポンシブデザイン */
@@ -414,7 +415,7 @@
                     grid.appendChild(div);
                 });
 
-                // ★ 新機能：ホーム画面の指追従＆エッジスクロール対応の並び替え
+                // ホーム画面の指追従＆エッジスクロール対応の並び替え
                 if (this.homeSortableObj) this.homeSortableObj.destroy();
                 this.homeSortableObj = new Sortable(grid, {
                     disabled: !this.isHomeSortEnabled, // ボタンがONの時だけ有効
@@ -423,6 +424,7 @@
                     delayOnTouchOnly: false,
                     touchStartThreshold: 5,
                     forceFallback: true, // 指にピッタリ追従させる魔法
+                    fallbackOnBody: true, // 【追記】ズレを完全に防ぐ魔法
                     fallbackClass: 'sortable-drag',
                     ghostClass: 'sortable-ghost',
                     scroll: true, // 画面端でスクロール
@@ -529,7 +531,7 @@
                 blockCont.innerHTML = '';
                 this.data.blocks?.forEach(b => editor.renderEditBlock(b));
                 
-                // ★ 新機能：編集画面のブロック並び替え（完璧な指追従＆スクロール対応）
+                // 編集画面のブロック並び替え（完璧な指追従＆スクロール対応）
                 new Sortable(blockCont, { 
                     handle: '.edit-card-handle', 
                     animation: 150,
@@ -537,6 +539,7 @@
                     delayOnTouchOnly: false,
                     touchStartThreshold: 5,
                     forceFallback: true, // 指にピッタリ追従させる
+                    fallbackOnBody: true, // 【追記】ズレを完全に防ぐ魔法
                     fallbackClass: 'sortable-drag',
                     ghostClass: 'sortable-ghost',
                     scroll: true, // 画面端でのゆっくりスクロール
@@ -676,7 +679,7 @@
                 if(name) this.loadPage(name);
             },
             
-            // ★ ひらがな・カタカナ・全角半角を問わない検索（維持）
+            // ひらがな・カタカナ・全角半角を問わない検索（維持）
             searchLive(val) {
                 if(this.currentPageId !== 'home') this.loadPage('home', true);
                 setTimeout(() => {
@@ -839,7 +842,7 @@
                 cont.appendChild(div);
             },
 
-            // ★ 時系列ソート機能（維持）
+            // 時系列ソート機能（維持）
             sortTimeline(btn) {
                 const cont = btn.closest('.edit-card').querySelector('.tl-container');
                 const rows = Array.from(cont.querySelectorAll('.tl-edit-row'));
