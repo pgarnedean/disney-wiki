@@ -60,6 +60,8 @@
 
         h2 { border-bottom: 1px solid #aaa; color: var(--disney-blue); margin-top: 40px; padding-bottom: 5px; font-size: 1.8em; clear: both; }
         h3 { color: var(--disney-blue); margin-top: 25px; font-size: 1.4em; border-bottom: 1px dashed #ccc; }
+        /* 今回追加した小見出し用のデザイン（線なし、少し小さめ） */
+        h4 { color: var(--disney-blue); margin-top: 25px; margin-bottom: 10px; font-size: 1.25em; border: none; clear: both; font-weight: bold; }
 
         .display-img, .display-gif { max-width: 100%; border-radius: 8px; cursor: pointer; transition: 0.3s; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .display-img:hover { opacity: 0.9; transform: scale(1.01); }
@@ -126,7 +128,7 @@
             z-index: 100000 !important;
             background: white !important;
             transform: scale(1.02);
-            margin: 0 !important; /* ズレ防止用の追加コード */
+            margin: 0 !important; /* ズレ防止用 */
         }
 
         /* スマートフォン用レスポンシブデザイン */
@@ -209,6 +211,7 @@
                     <button class="t-btn" onclick="editor.insertTag('<u>', '</u>')"><i class="fas fa-underline"></i> 下線</button>
                     <div style="width: 1px; background: #ccc; margin: 0 5px;"></div>
                     <button class="t-btn" onclick="editor.addBlock('section')"><i class="fas fa-heading"></i> 見出し</button>
+                    <button class="t-btn" onclick="editor.addBlock('subsection')"><i class="fas fa-heading" style="font-size: 0.8em;"></i> 小見出し</button>
                     <button class="t-btn" onclick="editor.addBlock('image')"><i class="fas fa-image"></i> 画像</button>
                     <button class="t-btn" onclick="editor.addBlock('gif')"><i class="fas fa-file-video"></i> GIF</button>
                     <button class="t-btn" onclick="editor.addBlock('pdf')"><i class="fas fa-file-pdf"></i> PDF</button>
@@ -265,7 +268,7 @@
             data: {},
             allPageCache: [],
             homeOrder: [],
-            isHomeSortEnabled: false, // ホーム画面の並び替えモード判定
+            isHomeSortEnabled: false,
             homeSortableObj: null,
 
             async init() {
@@ -338,7 +341,7 @@
 
                 if(this.currentPageId === 'home') {
                     tocContainer.classList.add('hidden');
-                    sortBtn.classList.remove('hidden'); // ホームでは並び替えボタン表示
+                    sortBtn.classList.remove('hidden');
                     document.getElementById('display-title').style.display = 'none';
                     document.getElementById('page-content').innerHTML = '';
                     document.getElementById('home-view').classList.remove('hidden');
@@ -349,7 +352,7 @@
                 }
 
                 tocContainer.classList.remove('hidden');
-                sortBtn.classList.add('hidden'); // 個別ページでは非表示
+                sortBtn.classList.add('hidden');
                 document.getElementById('display-title').style.display = 'block';
                 document.getElementById('home-view').classList.add('hidden');
                 document.getElementById('edit-toggle-btn').classList.remove('hidden');
@@ -367,7 +370,6 @@
                 }
             },
 
-            // ホーム画面の並び替えモードON/OFF切り替え
             toggleHomeSort() {
                 this.isHomeSortEnabled = !this.isHomeSortEnabled;
                 const btn = document.getElementById('toggle-sort-btn');
@@ -415,21 +417,20 @@
                     grid.appendChild(div);
                 });
 
-                // ホーム画面の指追従＆エッジスクロール対応の並び替え
                 if (this.homeSortableObj) this.homeSortableObj.destroy();
                 this.homeSortableObj = new Sortable(grid, {
-                    disabled: !this.isHomeSortEnabled, // ボタンがONの時だけ有効
+                    disabled: !this.isHomeSortEnabled,
                     animation: 150,
-                    delay: 400, // 0.4秒長押し
+                    delay: 400,
                     delayOnTouchOnly: false,
                     touchStartThreshold: 5,
-                    forceFallback: true, // 指にピッタリ追従させる魔法
-                    fallbackOnBody: true, // 【追記】ズレを完全に防ぐ魔法
+                    forceFallback: true,
+                    fallbackOnBody: true,
                     fallbackClass: 'sortable-drag',
                     ghostClass: 'sortable-ghost',
-                    scroll: true, // 画面端でスクロール
-                    scrollSensitivity: 80, // スクロールが始まる判定エリア
-                    scrollSpeed: 15, // スクロールの速さ
+                    scroll: true,
+                    scrollSensitivity: 80,
+                    scrollSpeed: 15,
                     onEnd: async () => {
                         const newOrder = Array.from(grid.querySelectorAll('.page-card')).map(el => el.dataset.id);
                         this.homeOrder = newOrder;
@@ -464,6 +465,13 @@
                         div.innerHTML = `<h2>${this.parseWiki(b.title)}</h2><p>${this.parseWiki(b.text)}</p>`;
                         const li = document.createElement('li');
                         li.innerHTML = `<a class="wiki-link" onclick="document.getElementById('block-${i}').scrollIntoView()">${b.title}</a>`;
+                        toc.appendChild(li);
+                    } else if (b.type === 'subsection') {
+                        // 新機能：小見出しの表示（h4タグで少し小さく、線なし）
+                        div.innerHTML = `<h4>${this.parseWiki(b.title)}</h4><p>${this.parseWiki(b.text)}</p>`;
+                        const li = document.createElement('li');
+                        li.style.marginLeft = '15px'; // 目次では少しインデントを下げる
+                        li.innerHTML = `<a class="wiki-link" style="font-size:0.95em;" onclick="document.getElementById('block-${i}').scrollIntoView()">${b.title}</a>`;
                         toc.appendChild(li);
                     } else if(b.type === 'image' || b.type === 'gif') {
                         div.innerHTML = `<h3>${this.parseWiki(b.title || '')}</h3><img src="${b.url}" class="display-img" onclick="app.openMedia('${b.url}')"><p style="font-size:0.9em; color:#666;">${this.parseWiki(b.description || '')}</p>`;
@@ -531,18 +539,17 @@
                 blockCont.innerHTML = '';
                 this.data.blocks?.forEach(b => editor.renderEditBlock(b));
                 
-                // 編集画面のブロック並び替え（完璧な指追従＆スクロール対応）
                 new Sortable(blockCont, { 
                     handle: '.edit-card-handle', 
                     animation: 150,
-                    delay: 400, // 0.4秒長押し
+                    delay: 400,
                     delayOnTouchOnly: false,
                     touchStartThreshold: 5,
-                    forceFallback: true, // 指にピッタリ追従させる
-                    fallbackOnBody: true, // 【追記】ズレを完全に防ぐ魔法
+                    forceFallback: true,
+                    fallbackOnBody: true,
                     fallbackClass: 'sortable-drag',
                     ghostClass: 'sortable-ghost',
-                    scroll: true, // 画面端でのゆっくりスクロール
+                    scroll: true,
                     scrollSensitivity: 80,
                     scrollSpeed: 15
                 });
@@ -679,17 +686,15 @@
                 if(name) this.loadPage(name);
             },
             
-            // ひらがな・カタカナ・全角半角を問わない検索（維持）
             searchLive(val) {
                 if(this.currentPageId !== 'home') this.loadPage('home', true);
                 setTimeout(() => {
-                    // ひらがなをカタカナに変換する魔法の関数
                     const hiraToKata = (str) => str.replace(/[\u3041-\u3096]/g, match => String.fromCharCode(match.charCodeAt(0) + 0x60));
                     
                     const normalizeText = (str) => {
                         if (!str) return "";
                         let s = str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, m => String.fromCharCode(m.charCodeAt(0) - 0xFEE0));
-                        s = hiraToKata(s); // 検索文字もデータも一旦すべてカタカナに揃える
+                        s = hiraToKata(s);
                         return s.toLowerCase();
                     };
 
@@ -751,10 +756,16 @@
                 div.dataset.type = b.type;
                 
                 let inner = `<div class="edit-card-handle"><i class="fas fa-bars"></i></div>`;
-                inner += `<div style="font-weight:bold; color:var(--disney-blue); margin-bottom:10px;">${b.type.toUpperCase()} ブロック</div>`;
                 
-                if(b.type === 'section') {
-                    inner += `<input type="text" class="b-title edit-area" placeholder="見出し" value="${b.title || ''}">
+                // 新機能：ブロックの名前を分かりやすく表示する
+                let typeName = b.type.toUpperCase();
+                if (b.type === 'section') typeName = 'SECTION (見出し)';
+                if (b.type === 'subsection') typeName = 'SUBSECTION (小見出し)';
+                inner += `<div style="font-weight:bold; color:var(--disney-blue); margin-bottom:10px;">${typeName} ブロック</div>`;
+                
+                if(b.type === 'section' || b.type === 'subsection') {
+                    const placeholderTitle = b.type === 'section' ? '見出し' : '小見出し';
+                    inner += `<input type="text" class="b-title edit-area" placeholder="${placeholderTitle}" value="${b.title || ''}">
                               <textarea class="b-text edit-area" style="height:100px;" placeholder="本文" onfocus="editor.lastFocused = this">${b.text || ''}</textarea>`;
                 } else if(['image', 'gif', 'youtube', 'pdf'].includes(b.type)) {
                     inner += `<input type="text" class="b-title edit-area" placeholder="タイトル (任意)" value="${b.title || ''}">
@@ -842,7 +853,6 @@
                 cont.appendChild(div);
             },
 
-            // 時系列ソート機能（維持）
             sortTimeline(btn) {
                 const cont = btn.closest('.edit-card').querySelector('.tl-container');
                 const rows = Array.from(cont.querySelectorAll('.tl-edit-row'));
@@ -875,7 +885,8 @@
                 document.querySelectorAll('.block-item').forEach(el => {
                     const type = el.dataset.type;
                     const b = { type: type };
-                    if(type === 'section') {
+                    // 新機能：取得するときも小見出しに対応
+                    if(type === 'section' || type === 'subsection') {
                         b.title = el.querySelector('.b-title').value;
                         b.text = el.querySelector('.b-text').value;
                     } else if(['image', 'gif', 'youtube', 'pdf'].includes(type)) {
