@@ -60,7 +60,6 @@
 
         h2 { border-bottom: 1px solid #aaa; color: var(--disney-blue); margin-top: 40px; padding-bottom: 5px; font-size: 1.8em; clear: both; }
         h3 { color: var(--disney-blue); margin-top: 25px; font-size: 1.4em; border-bottom: 1px dashed #ccc; }
-        /* 今回追加した小見出し用のデザイン（線なし、少し小さめ） */
         h4 { color: var(--disney-blue); margin-top: 25px; margin-bottom: 10px; font-size: 1.25em; border: none; clear: both; font-weight: bold; }
 
         .display-img, .display-gif { max-width: 100%; border-radius: 8px; cursor: pointer; transition: 0.3s; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
@@ -127,8 +126,8 @@
             box-shadow: 0 15px 35px rgba(0,0,0,0.3) !important; 
             z-index: 100000 !important;
             background: white !important;
-            transform: scale(1.02);
-            margin: 0 !important; /* ズレ防止用 */
+            /* ズレの原因となっていた transform: scale(1.02); を削除し、完璧な追従を実現 */
+            margin: 0 !important; 
         }
 
         /* スマートフォン用レスポンシブデザイン */
@@ -467,10 +466,9 @@
                         li.innerHTML = `<a class="wiki-link" onclick="document.getElementById('block-${i}').scrollIntoView()">${b.title}</a>`;
                         toc.appendChild(li);
                     } else if (b.type === 'subsection') {
-                        // 新機能：小見出しの表示（h4タグで少し小さく、線なし）
                         div.innerHTML = `<h4>${this.parseWiki(b.title)}</h4><p>${this.parseWiki(b.text)}</p>`;
                         const li = document.createElement('li');
-                        li.style.marginLeft = '15px'; // 目次では少しインデントを下げる
+                        li.style.marginLeft = '15px';
                         li.innerHTML = `<a class="wiki-link" style="font-size:0.95em;" onclick="document.getElementById('block-${i}').scrollIntoView()">${b.title}</a>`;
                         toc.appendChild(li);
                     } else if(b.type === 'image' || b.type === 'gif') {
@@ -757,7 +755,6 @@
                 
                 let inner = `<div class="edit-card-handle"><i class="fas fa-bars"></i></div>`;
                 
-                // 新機能：ブロックの名前を分かりやすく表示する
                 let typeName = b.type.toUpperCase();
                 if (b.type === 'section') typeName = 'SECTION (見出し)';
                 if (b.type === 'subsection') typeName = 'SUBSECTION (小見出し)';
@@ -885,7 +882,6 @@
                 document.querySelectorAll('.block-item').forEach(el => {
                     const type = el.dataset.type;
                     const b = { type: type };
-                    // 新機能：取得するときも小見出しに対応
                     if(type === 'section' || type === 'subsection') {
                         b.title = el.querySelector('.b-title').value;
                         b.text = el.querySelector('.b-text').value;
