@@ -196,7 +196,7 @@
                 </div>
                 
                 <div id="home-view" class="hidden">
-                    <button class="btn-auto-link" onclick="app.autoLinkAllPages()">🔗 全Wiki自動リンク結合（魔法）</button>
+                    <button class="btn-auto-link" onclick="app.autoLinkAllPages()">🔗 全Wiki自動リンク結合</button>
                     <div id="home-grid" class="home-grid"></div>
                 </div>
 
@@ -654,7 +654,7 @@
                     });
                     if(changed) await setDoc(doc(db, "pages", pData.id), pData, { merge: true });
                 }
-                alert("魔法のリンク結合が完了しました！");
+                alert("リンク結合が完了しました！");
                 location.reload();
             },
 
